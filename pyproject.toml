@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "repl_python3_Vortex-Bot"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+discord = "^1.0.1"
+flask = "^2.0.0"
+"discord.py-message-components" = "^1.7.5"
+pymongo = "^3.12.0"
+dnspython = "^2.1.0"
+jishaku = "^2.2.0"
+animec = "^0.3.3"
+DiscordUtils = "^1.3.4"
+discord-together = "^1.1.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
