@@ -1,0 +1,36 @@
+workReplies = [
+    'X-15 paid you :gem: {} to send him more porn, you obviously took the deal because free money!',
+    'Some dumbass named Goofy dropped his wallet and you were able to quickly snatch :gem: {}',
+    'Kurbyz realised that it was fake but you have already immigrated to Nigeria living a perfect live with the nigerian prince. He gave you :gem: {} bcs you married his daughter.',
+    "You went into the bathroom to earn some money from moe's toilette. The toilette started to somehow speak and told you that your next cf is going to be a lucky one. Also here is the money you earned through your poop :gem: {}",
+    'Cosmo gave you :gem: {} to talk to him bcs he feels so lonely.',
+    "You went on the dark web in hope that you could find Kurbyz chef hat. Unfortunatelly for you it was already sold to some rat who used it in a disney movie. The rat sold the hat after the movie to some rich guy. But you did find an copy of the hat on the web you bought it and gave it back to kurbyz. He gave you :gem: {} for giving it back.... *Hope he doesnt realise*",
+    'You make a ROBLOX game. That got you 0 cash so you got of your lazy ass and found a real job. They give you :gem: {}.',
+    "You're hired by some random website called https://www.pornhub.com/ . Completely unrelated to the previous bit of information, you earned :gem: {}.",
+    "You helped Jynx shave off Cosmo's mustache while he was asleep and Jynx payed you :gem: {} for helping",
+    "My name is Barry Allen, and I am the fastest man alive. To the outside world, I’m an ordinary forensic scientist, but secretly, with the help of my friend at S.T.A.R Labs, I fight crime and find other meta-humans like me. I hunted down the man who killed my mother, but in doing so, I opened up our world to new threats. I am the Flash and I am the only one fast enough to give you :gem: {}.",
+]
+slutReplies = [
+    "You earned :gem: {} by sucking dick. Good job!",
+    "Cosmo pays you :gem: {} to fuck him. You grab the money and run cos he's ugly.",
+    "If you get his reply DM X-15 (aka Dragon, aka am i a plane or a mouse, aka bootleg cosmo) for a *special* surprise. **This reply is not related to whatever the fuck El Terror is currently doing.** :gem: {}",
+    "You slipped and fell on X-15's cum puddle that he forgot to clean up. While down there you found :gem: {}.",
+    "You steal error's hentai and sell it for :gem: {}.",
+    "You tried to give X-15 a head but failed instead u licked his ass. He gave you :gem: {} so you wont tell anybody about this",
+    "Vortex fucked you in the ass. Take :gem: {} and don't question how that works.",
+    "https://www.pornhub.com/ :gem: {}",
+    "You had to go through an entrance exam to get into the staff team. Cosmo gave you :gem: {} to not speak about it with anybody",
+    "BJ'S HERE, BJ'S HOT AND READY TO GO BJ'S HERE. GET YOUR BJ'S HERE FOR ONLY :gem: {}. BJS TOOTHLESS AND READY TO GO.",
+]
+crimeReplies = [
+    "You managed to steal a piece of Vortex's code and now Cosmo is after your ass. Thankfully you sold it on the black market for :gem: {}.",
+    "Moe invited you to his house, after seeing his Magical Golden Toilet you knew you had to steal it. After running off with it, you sold it for :gem: {}.",
+    "You stole Kurby's Frying Pan. You don't get away with that shit. You went to jail. On a brighter note, you found :gem: {} on the floor.",
+    "You attempted to raid Baco's Base. Hint the **attempted**. He felt bad for you and paid you :gem: {}.",
+    "You caught Jynx trying to kidnap Cosmo and decided to help. She paid you :gem: {} for asissting.",
+    "You robbed a fucking bank and got :gem: {}. How boring you are.",
+    "You stole Vortex's source code...RUN MOTHERFUCKER RUN COSMO'S AFTER YOUR ASS. Also take :gem: {} for your bravery.",
+    "You attempted to steal X-15's porn, you didn't make it far but he gave you :gem: {} for good effort.",
+    "You and your friend try to get some famous dudes cum. You sell it for :gem: {}.",
+    "You tried to kill the devil, you failed because his immortal you dumb fuck. Anyways he gave you :gem: {} and a shit ton of gold.",
+]

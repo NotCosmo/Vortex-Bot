@@ -1,13 +1,52 @@
-import discord
+import nextcord as discord
 import datetime
+from time import strftime
 import random
-from discord.ext import commands
-from discord.ext.commands import BucketType
+from nextcord.ext import commands
+from nextcord import Spotify
+from nextcord.ext.commands import BucketType
+
+def hex_to_rgb(value):
+    value = value.lstrip('#')
+    lv = len(value)
+    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+
+def rgb_to_hex(rgb):
+    return '#%02x%02x%02x' % rgb
 
 class misc(commands.Cog):
 
-    def __init__(self, client):
-        self.client = client
+    @commands.command(aliases = ['source', 'git', 'gh'])
+    @commands.cooldown(1, 10, BucketType.user)
+    async def github(self, ctx):
+        await ctx.send(":white_check_mark: ┃ You can find my source code on Github through this link: https://github.com/NotCosmo/Vortex")
+
+    @commands.command(aliases = ['si'])
+    @commands.cooldown(1, 10, BucketType.user)
+    async def serverinfo(self, ctx):
+        name = str(ctx.guild.name)
+        description = str(ctx.guild.description)
+
+        owner = 'cosmo.#5056'
+        id = str(ctx.guild.id)
+        region = str(ctx.guild.region)
+        memberCount = str(ctx.guild.member_count)
+
+        icon = ctx.guild.icon.url
+        
+        embed = discord.Embed(
+            title=name + " Server Information",
+            description=description,
+            colour = discord.Colour.random()
+        )
+        embed.set_thumbnail(url=icon)
+        embed.add_field(name="Owner", value=owner, inline=True)
+        embed.add_field(name="Server ID", value=id, inline=True)
+        embed.add_field(name="Region", value=region, inline=True)
+        embed.add_field(name="Member Count", value=memberCount, inline=True)
+
+        await ctx.send(embed=embed)
 
     @commands.command()
     @commands.cooldown(1, 3, BucketType.user)
@@ -76,7 +115,7 @@ class misc(commands.Cog):
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)  
+            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar.url)  
             await ctx.send(embed=embed)
 
     @commands.command()
@@ -146,7 +185,7 @@ class misc(commands.Cog):
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)  
+            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar.url)  
             await ctx.send(embed=embed)
 
     @commands.command(aliases = ["eco"])
@@ -216,10 +255,10 @@ class misc(commands.Cog):
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)  
+            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar.url)  
             await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(aliases = ["avatar"])
     @commands.cooldown(1, 3, BucketType.user)
     async def av(self, ctx, user: discord.Member=None):
         
@@ -228,10 +267,10 @@ class misc(commands.Cog):
         )
 
         if user is None:
-            embed.set_image(url=ctx.author.avatar_url)
+            embed.set_image(url=ctx.author.avatar.url)
 
         else:
-            embed.set_image(url=user.avatar_url)
+            embed.set_image(url=user.avatar.url)
         
         await ctx.send(embed=embed)
 
@@ -245,7 +284,7 @@ class misc(commands.Cog):
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)    
+            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar.url)    
         
         await ctx.send(embed=embed)
         
@@ -278,7 +317,7 @@ class misc(commands.Cog):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send('error')
 
-    @commands.command()
+    @commands.command(aliases = ["whois"])
     async def userinfo(self, ctx, *, user: discord.Member=None): # b'\xfc'
         if user is None:
             user = ctx.author      
@@ -288,12 +327,17 @@ class misc(commands.Cog):
             colour=user.colour, 
             description=user.mention
         )
-        embed.set_author(name=str(user), icon_url=user.avatar_url)
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_author(name=str(user), icon_url=user.display_avatar)
+        embed.set_thumbnail(url=user.display_avatar)
+
+        if user.activity:
+            activity = user.activity.name
+        else:
+            activity = "None"
 
         embed.add_field(name="Joined Server", value=f'`{user.joined_at.strftime(date_format)}`')
         embed.add_field(name="Account Creation", value=f'`{user.created_at.strftime(date_format)}`')
-        embed.add_field(name="User Status", value=f"{user.activity}", inline=False)
+        embed.add_field(name="User Status", value=f"{activity}", inline=False)
 
         if len(user.roles) > 1:
             role_string = ' '.join([r.mention for r in user.roles][1:])
@@ -316,10 +360,10 @@ class misc(commands.Cog):
             description = ":thumbsup: Thank you for the bug report! We have received it and will notify you upon it being fixed.",
             colour = discord.Colour.from_rgb(75, 255, 75)
         )
-        embed2.set_author(name=f"Bug Reported - {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed2.set_author(name=f"Bug Reported - {ctx.author}", icon_url=ctx.author.avatar.url)
         embed2.timestamp = datetime.datetime.utcnow()
 
-        embed.set_thumbnail(url=ctx.author.avatar_url)
+        embed.set_thumbnail(url=ctx.author.avatar.url)
         embed.set_footer(text = "Bug Reported")
         embed.timestamp = datetime.datetime.utcnow()
 
@@ -338,6 +382,38 @@ class misc(commands.Cog):
             )
             embed.timestamp = datetime.datetime.utcnow()
             await ctx.send(embed=embed)
+
+    @commands.command()
+    async def spotify(self, ctx, user: discord.Member=None):
+
+        if user is None:
+            user = ctx.author
+
+        else:
+            user = user
+
+        for activity in user.activities:
+            if isinstance(activity, Spotify):
+
+                em = discord.Embed(
+                    title = f"Listening to {activity.title}..",
+                    description = f"Track ID: {activity.track_id}",
+                    colour = discord.Colour.from_rgb(30, 215, 96)
+                )
+
+                _artists = activity.artists
+                artists = ""
+                for i in _artists:
+                    artists += i + ", "
+
+                em.set_thumbnail(url=activity.album_cover_url)
+                em.add_field(name="Artists", value=artists, inline=True)
+                em.add_field(name="Album", value=activity.album, inline=True)
+                em.add_field(name="Track Url", value=activity.track_url, inline=False)
+                em.set_footer(text=f"{user.name}'s Spotify", icon_url=user.avatar.url)
+                em.timestamp = datetime.datetime.utcnow()
+
+                await ctx.send(embed=em)
 
 def setup(client):
     client.add_cog(misc(client))

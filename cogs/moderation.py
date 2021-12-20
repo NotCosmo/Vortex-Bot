@@ -1,7 +1,10 @@
-import discord
-import datetime
-from discord.ext import commands
-from discord.ext.commands import cooldown, BucketType
+import nextcord as discord
+import random
+import asyncio
+import time
+from datetime import datetime
+from nextcord.ext import commands
+from nextcord.ext.commands import cooldown, BucketType
 
 class AdminCmds(commands.Cog):
 
@@ -11,6 +14,48 @@ class AdminCmds(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
 	    pass
+
+    #Lockdown#----------#
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def lockdown(self, ctx, *, reason=None):
+        
+        if reason is None:
+            reason = 'No reason provided.'
+
+        embed = discord.Embed(
+            title = "Server Lockdown",
+            description = ':lock: ' + reason,
+            colour = discord.Colour.from_rgb(255, 75, 75)
+        )
+        embed.timestamp = datetime.utcnow()
+
+        ids = [735765424108601386, 885250888929775666, 814797941612609537, 887700373408722984, 814797661261398076, 868541058466844702, 842977359229485058, 814797556147421275, 814797594466451466, 830809651724943380, 735796560792780891, 814787175576109067, 814787195428405259, 872450532659327016]
+        #ids = [771679224716197899, 842812145791402004]
+
+        for ch in ids:
+            channel = self.client.get_channel(ch)
+            await channel.set_permissions(ctx.guild.default_role, send_messages=False)
+            await channel.send(embed=embed)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def unlockdown(self, ctx):
+
+        ids = [735765424108601386, 885250888929775666, 814797941612609537, 887700373408722984, 814797661261398076, 868541058466844702, 842977359229485058, 814797556147421275, 830809651724943380]
+        #ids = [771679224716197899, 842812145791402004]
+
+        embed = discord.Embed(
+            title = "Server Lockdown",
+            description = ':unlock: Lockdown has ended, thank you for your patience.',
+            colour = discord.Colour.from_rgb(255, 75, 75)
+        )
+        embed.timestamp = datetime.utcnow()
+
+        for ch in ids:
+            channel = self.client.get_channel(ch)
+            await channel.set_permissions(ctx.guild.default_role, send_messages=None)
+            await channel.send(embed=embed)
 
     #Ban#--------------#
     @commands.command()
@@ -24,7 +69,7 @@ class AdminCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(119, 178, 86)
             )
 
-            embed.set_author(name=f'User Banned', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'User Banned', icon_url = ctx.author.avatar.url)
             embed.set_footer(text = f'User banned by {ctx.author}')
 
             await user.ban(reason=reason)
@@ -36,7 +81,7 @@ class AdminCmds(commands.Cog):
                 description = f'Bot does not have enough permissions to ban member.',
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)
             embed.set_footer(text = f'{ctx.author}')
             await ctx.send(embed=embed)
 
@@ -50,7 +95,7 @@ class AdminCmds(commands.Cog):
                 description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar.url)
             await ctx.send(embed=embed)
 
         elif isinstance(error, commands.MissingRequiredArgument):
@@ -59,7 +104,7 @@ class AdminCmds(commands.Cog):
                 f'**Command Format**\n• `!ban <user> (reason)`\n \n**Example**\n• `!ban @cosmo.#5056`\n• `!ban @cosmo.#5056 Using bad words!`',
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Ban Command', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Ban Command', icon_url = ctx.author.avatar.url)
             embed.set_footer(text='- Arguments in () are optional.')
             await ctx.send(embed=embed)
 
@@ -68,7 +113,7 @@ class AdminCmds(commands.Cog):
                 description = f'You do not have enough permissions to run this command.',
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Permission Error', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Permission Error', icon_url = ctx.author.avatar.url)
             await ctx.send(embed=embed)
 
     #Kick#--------------#
@@ -83,7 +128,7 @@ class AdminCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(119, 178, 86)
             )
 
-            embed.set_author(name=f'User Kicked', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'User Kicked', icon_url = ctx.author.avatar.url)
             embed.set_footer(text = f'User kicked by {ctx.author}')
 
             await user.kick(reason=reason)
@@ -95,7 +140,7 @@ class AdminCmds(commands.Cog):
                 description = f'Bot does not have enough permissions to kick member.',
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)
             embed.set_footer(text = f'{ctx.author}')
             await ctx.send(embed=embed)
 
@@ -109,7 +154,7 @@ class AdminCmds(commands.Cog):
                 description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar.url)
             await ctx.send(embed=embed)
 
         elif isinstance(error, commands.MissingRequiredArgument):
@@ -118,7 +163,7 @@ class AdminCmds(commands.Cog):
                 f'**Command Format**\n• `!kick <user> (reason)`\n \n**Example**\n• `!kick @cosmo.#5056`\n• `!kick @cosmo.#5056 Being rude!`',
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Kick Command', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Kick Command', icon_url = ctx.author.avatar.url)
             embed.set_footer(text='- Arguments in () are optional.')
             await ctx.send(embed=embed)
 
@@ -127,7 +172,7 @@ class AdminCmds(commands.Cog):
                 description = f'You do not have enough permissions to run this command.',
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Permission Error', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Permission Error', icon_url = ctx.author.avatar.url)
             await ctx.send(embed=embed)
 
     #Role#--------------#
@@ -142,7 +187,7 @@ class AdminCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
             
-            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar_url)            
+            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)            
             await ctx.send(embed=embed)
 
         if role in user.roles:
@@ -151,7 +196,7 @@ class AdminCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(119, 178, 86)
             )
 
-            embed.set_author(name=f'Role Removed', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Role Removed', icon_url = ctx.author.avatar.url)
             embed.set_footer(text = f'Role removed by {ctx.author}')
             await user.remove_roles(role) 
             await ctx.send(embed=embed)
@@ -162,7 +207,7 @@ class AdminCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(119, 178, 86)
             )
 
-            embed.set_author(name=f'Role Added', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Role Added', icon_url = ctx.author.avatar.url)
             embed.set_footer(text = f'Role added by {ctx.author}')
             await user.add_roles(role) 
             await ctx.send(embed=embed)
@@ -176,23 +221,25 @@ class AdminCmds(commands.Cog):
                 description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar.url)
+            await ctx.send(embed=embed)
 
         elif isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(
                 description = f'Invalid Arguments. `!role <user> <role name>`.',
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)
+            await ctx.send(embed=embed)
 
         elif isinstance(error, commands.MissingPermissions):
             embed = discord.Embed(
                 description = f'You do not have enough permissions to run this command.',
                 colour = discord.Colour.from_rgb(255, 91, 91)
             )
-            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)
 
-        await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
 
     @commands.command(aliases = ["clear", "clean"])
     @commands.has_permissions(administrator=True)
@@ -282,6 +329,51 @@ class AdminCmds(commands.Cog):
         await eco3.channel.set_permissions(ctx.guild.default_role, send_messages=False)
         await eco3.send(embed=embed)
         await ctx.channel.send('Lockdown complete.')
+
+    @commands.command()
+    @commands.is_owner()
+    async def a(self, ctx, user: discord.Member):
+
+        await user.edit(nick=None)
+
+    @commands.command(aliases = ['mn'])
+    @commands.is_owner()
+    async def massnick(self, ctx, *, nickArg=None):
+
+        count = 0
+        errors = 0
+
+        start = time.time()
+        processing = discord.Embed(
+            description = f"> :gear: **Status:** `Processing`\n> :gear: **Users:**: `{ctx.guild.member_count}`\n> :gear: ***Attempting to change nickname for `{ctx.guild.member_count}` members.***",
+            colour = discord.Colour.from_rgb(255, 165, 0)
+        )
+        processing.timestamp = datetime.utcnow()
+        await ctx.send(embed=processing)
+
+        for member in ctx.guild.members:
+            try:
+                await member.edit(nick=None)
+                count += 1
+            except:
+                errors += 1
+
+        stop = time.time()
+        embed = discord.Embed(
+            description = f"> :white_check_mark: **Status:** `Complete`\n> :ballot_box_with_check: **Nicked Users:** `{count}`\n> :clock1: **Time Elapsed:** `{round(stop-start)}s` \n> :x: ***{errors} nicknames could not be changed.***",
+            colour = discord.Colour.from_rgb(50, 205, 50)
+        )
+        embed.timestamp = datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def lol(self, ctx):
+        processing = discord.Embed(
+            description = f":jack_o_lantern: **The Headless Horseman** has awoken..",
+            colour = discord.Colour.from_rgb(255, 165, 0)
+        )
+        processing.timestamp = datetime.utcnow()
+        await ctx.send(embed=processing)
 
 def setup(client):
     client.add_cog(AdminCmds(client))

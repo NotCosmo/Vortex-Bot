@@ -1,7 +1,9 @@
 import animec
 import datetime
-import discord
-from discord.ext import commands
+import nextcord as discord
+from nextcord.ext import commands
+
+#---------------------COG SETUP---------------------#
 
 class Anime(commands.Cog):
     
@@ -77,6 +79,8 @@ class Anime(commands.Cog):
             embed.add_field(name = f"{i+1}) {titles[i]}", value = f"{descriptions[i][:200]}...\n[Read More]({links[i]})", inline=False)
 
         await ctx.send(embed=embed)
-        
+
+#---------------------CLIENT---------------------#
+
 def setup(client):
     client.add_cog(Anime(client))

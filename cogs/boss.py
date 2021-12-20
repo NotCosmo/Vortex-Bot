@@ -1,710 +1,505 @@
-import discord
+# Main Imports
+
+import nextcord as discord
 import random
 import asyncio
-import datetime
-from loot_table import boss1_lootTable, boss2_lootTable, boss3_lootTable, boss4_lootTable, boss5_lootTable
-from discord.ext import commands
-from discord.ext.commands import BucketType
+import time
 
+# Other
+
+from datetime import datetime
+from nextcord.ext import commands
+from nextcord.ext.commands import BucketType
+from nextcord.utils import find
+from pymongo import MongoClient
+from loot import *
+
+quest_instance = False
+
+# ------------------------------- #
+''' Cluster '''
+# ------------------------------- #
+
+cluster = MongoClient("mongodb+srv://Cosmo:1H1uqPGjo5CjtHQe@eco.5afje.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+database = cluster["Discord"]
+eco = database["Economy"]
+
+#
+''' Boss Class '''
+#
+
+class NewBoss():
+    
+    def __init__(self, name, desc, health, mindamage, maxdamage, loot):
+        self.name = name
+        self.desc = desc
+        self.health = health
+        self.mindamage = mindamage
+        self.maxdamage = maxdamage
+        self.loot = loot
+
+class Player():
+    
+    def __init__(self, name, health, originalhealth, mindamage, maxdamage, agility):
+        self.name = name
+        self.health = health
+        self.originalhealth = originalhealth
+        self.mindamage = mindamage
+        self.maxdamage = maxdamage
+        self.agility = agility
+        self.potionActive = False
+
+# ------------------------------- #
+''' Setup '''
+# ------------------------------- #
 
 class Boss(commands.Cog):
 
     def __init__(self, client):
         self.client = client
 
-    @commands.command()
-    @commands.cooldown(1, 2, BucketType.user)
+    MinionLoot = []
+
+    @commands.group(invoke_without_command=True)
+    @commands.cooldown(1, 1, BucketType.user)
     async def boss(self, ctx, *, bossName=None):
 
-        if bossName == 'Kraken' or bossName == 'kraken':
-
-            rankReq = discord.utils.find(lambda r: r.name == '[✦] Mage', ctx.message.guild.roles)
-            keyReq = discord.utils.find(lambda r: r.name == '[🌊] Key of the Sea', ctx.message.guild.roles)
-            krakenWeapon = discord.utils.find(lambda r: r.name == "[✦] Kraken's Eye", ctx.message.guild.roles)
-            # gaiaTitle = discord.utils.find(lambda r: r.name == "[⚔️] Slayer of the Earth", ctx.message.guild.roles)
-            logChannel = self.client.get_channel(873941431570546770)
-
-            if rankReq in ctx.author.roles and keyReq in ctx.author.roles:
-
-                bossHP = 50000
-                playerHP = 1500
-
-                if krakenWeapon in ctx.author.roles:
-                    dpsMin = 4000
-                    dpsMax = 5000
-                    playerHP = 2500
-
-                else:
-                    dpsMin = 2000
-                    dpsMax = 2500
-                    playerHP = 1500
-
-                embed = discord.Embed(
-                    title='🦑 The Kraken',
-                    description=f'__**Boss Health**__\n:heart: {bossHP}\n\n__**Player Health**__\n:heart: {playerHP}\n\n__**Difficulty**__\n:star: :star:',
-                    colour=discord.Colour.red()
-                )
-
-                msg = await ctx.send(embed=embed)
-                while bossHP > 0 and playerHP > 0:
-                    await asyncio.sleep(1)
-                    DPS = random.randint(dpsMin, dpsMax)
-                    playerDamage = random.randint(55, 75)
-                    bossHP = bossHP - DPS
-                    await asyncio.sleep(0.1)
-                    playerHP = playerHP - playerDamage
-
-                    embed2 = discord.Embed(
-                        title='🦑 The Kraken',
-                        description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star:',
-                        colour=discord.Colour.red()
-                    )
-                    await msg.edit(embed=embed2)
-
-                if bossHP <= 0:
-
-                    if playerHP <= 0:
-                        embed = discord.Embed(
-                            title='You have died.',
-                            description='The boss killed you before you killed it.',
-                            colour=discord.Colour.from_rgb(255, 95, 95)
-                        )
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.send(embed=embed)
-                        await ctx.author.remove_roles(keyReq)
-
-                    else:
-                        l1 = random.choice(boss1_lootTable)
-                        l2 = random.choice(boss1_lootTable)
-                        l3 = random.choice(boss1_lootTable)
-                        embed = discord.Embed(
-                            title='The Kraken has been defeated',
-                            description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed2 = discord.Embed(
-                            title='Boss Defeated',
-                            description=f'{ctx.author.mention} has defeated the Kraken.\n \n __**Loot**__\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        if l1 == '[ITEM] Krakens Eye' or l2 == '[ITEM] Krakens Eye' or l3 == '[ITEM] Krakens Eye':
-                            await ctx.author.add_roles(krakenWeapon)
-
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.author.remove_roles(keyReq)
-                        await logChannel.send(embed=embed2)
-                        await ctx.send(embed=embed)
-
-                elif playerHP <= 0:
-
-                    embed = discord.Embed(
-                        title='You have died.',
-                        description='The boss killed you before you killed it.',
-                        colour=discord.Colour.from_rgb(255, 95, 95)
-                    )
-                    await ctx.send(f'{ctx.author.mention}')
-                    await ctx.send(embed=embed)
-
-        if bossName == 'Gorgon' or bossName == 'gorgon':
-
-            rankReq = discord.utils.find(lambda r: r.name == '[✦ XII] Divine Mage', ctx.message.guild.roles)
-            keyReq = discord.utils.find(lambda r: r.name == '[✦] Shadow Key', ctx.message.guild.roles)
-            krakenWeapon = discord.utils.find(lambda r: r.name == "[✦] Kraken's Eye", ctx.message.guild.roles)
-            weaponDrop = discord.utils.find(lambda r: r.name == "[✦] Gorgons Shadow", ctx.message.guild.roles)
-            # gaiaTitle = discord.utils.find(lambda r: r.name == "[⚔️] Slayer of the Earth", ctx.message.guild.roles)
-            logChannel = self.client.get_channel(873941431570546770)
-
-            if rankReq in ctx.author.roles and keyReq in ctx.author.roles:
-
-                bossHP = 100000
-                if krakenWeapon in ctx.author.roles:
-                    dpsMin = 4000
-                    dpsMax = 5000
-                    playerHP = 2500
-
-                else:
-                    dpsMin = 2000
-                    dpsMax = 2500
-                    playerHP = 1500
-
-                embed = discord.Embed(
-                    title='Gorgon',
-                    description=f'__**Boss Health**__\n:heart: {bossHP}\n\n__**Player Health**__\n:heart: {playerHP}\n\n__**Difficulty**__\n:star: :star: :star:',
-                    colour=discord.Colour.red()
-                )
-
-                msg = await ctx.send(embed=embed)
-                while bossHP > 0 and playerHP > 0:
-                    await asyncio.sleep(1)
-                    DPS = random.randint(dpsMin, dpsMax)
-                    playerDamage = random.randint(90, 115)
-                    bossHP = bossHP - DPS
-                    await asyncio.sleep(0.1)
-                    playerHP = playerHP - playerDamage
-
-                    embed2 = discord.Embed(
-                        title='Gorgon',
-                        description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star:',
-                        colour=discord.Colour.red()
-                    )
-                    await msg.edit(embed=embed2)
-
-                if bossHP <= 0:
-
-                    if playerHP <= 0:
-                        if bossHP <= 0:
-                            bossHP = 0
-
-                        embed = discord.Embed(
-                            title='You have died.',
-                            description='The boss killed you before you killed it.',
-                            colour=discord.Colour.from_rgb(255, 95, 95)
-                        )
-                        embed2 = discord.Embed(
-                            title='Gorgon',
-                            description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: 0 *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star:',
-                            colour=discord.Colour.red()
-                        )
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.send(embed=embed)
-                        await ctx.author.remove_roles(keyReq)
-                        await msg.edit(embed=embed2)
-
-                    else:
-                        l1 = random.choice(boss2_lootTable)
-                        l2 = random.choice(boss2_lootTable)
-                        l3 = random.choice(boss2_lootTable)
-                        embed = discord.Embed(
-                            title='The Gorgon has been defeated',
-                            description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed2 = discord.Embed(
-                            title='Boss Defeated',
-                            description=f'{ctx.author.mention} has defeated the Gorgon.\n \n __**Loot**__\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed3 = discord.Embed(
-                            title='Gorgon',
-                            description=f'\n\n__**Boss Health**__\n:heart: 0 *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star:',
-                            colour=discord.Colour.red()
-                        )
-                        if l1 == '[ITEM] Gorgons Shadow' or l2 == '[ITEM] Gorgons Shadow' or l3 == '[ITEM] Gorgons Shadow':
-                            await ctx.author.add_roles(weaponDrop)
-
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.author.remove_roles(keyReq)
-                        await logChannel.send(embed=embed2)
-                        await ctx.send(embed=embed)
-                        await msg.edit(embed=embed3)
-
-                elif playerHP <= 0:
-
-                    embed = discord.Embed(
-                        title='You have died.',
-                        description='The boss killed you before you killed it.',
-                        colour=discord.Colour.from_rgb(255, 95, 95)
-                    )
-                    embed2 = discord.Embed(
-                        title='Gorgon',
-                        description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: 0 *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star:',
-                        colour=discord.Colour.red()
-                    )
-                    await ctx.send(f'{ctx.author.mention}')
-                    await ctx.send(embed=embed)
-                    await ctx.author.remove_roles(keyReq)
-                    await msg.edit(embed=embed2)
-
-        if bossName == 'Hera' or bossName == 'hera':
-
-            rankReq = discord.utils.find(lambda r: r.name == '[✦ XIII] Celestial', ctx.message.guild.roles)
-            keyReq = discord.utils.find(lambda r: r.name == '[✨] Celestial Key', ctx.message.guild.roles)
-            gorgonWeapon = discord.utils.find(lambda r: r.name == "[✦] Gorgons Shadow", ctx.message.guild.roles)
-            weaponDrop = discord.utils.find(lambda r: r.name == "[✨] Godly Scepter", ctx.message.guild.roles)
-            # gaiaTitle = discord.utils.find(lambda r: r.name == "[⚔️] Slayer of the Earth", ctx.message.guild.roles)
-            logChannel = self.client.get_channel(873941431570546770)
-
-            if rankReq in ctx.author.roles and keyReq in ctx.author.roles:
-
-                bossHP = 175000
-                if gorgonWeapon in ctx.author.roles:
-                    dpsMin = 8000
-                    dpsMax = 10000
-                    playerHP = 3850
-
-                elif weaponDrop in ctx.author.roles:
-                    dpsMin = 16000
-                    dpsMax = 20000
-                    playerHP = 4250
-
-                else:
-                    dpsMin = 2000
-                    dpsMax = 2500
-                    playerHP = 1500
-
-                embed = discord.Embed(
-                    title='Hera',
-                    description=f'__**Boss Health**__\n:heart: {bossHP}\n\n__**Player Health**__\n:heart: {playerHP}\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                    colour=discord.Colour.red()
-                )
-
-                msg = await ctx.send(embed=embed)
-                while bossHP > 0 and playerHP > 0:
-                    await asyncio.sleep(1)
-                    DPS = random.randint(dpsMin, dpsMax)
-                    playerDamage = random.randint(170, 210)
-                    bossHP = bossHP - DPS
-                    await asyncio.sleep(0.1)
-                    playerHP = playerHP - playerDamage
-
-                    embed2 = discord.Embed(
-                        title='Hera',
-                        description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                        colour=discord.Colour.red()
-                    )
-                    await msg.edit(embed=embed2)
-
-                if bossHP <= 0:
-
-                    if playerHP <= 0:
-                        if bossHP <= 0:
-                            bossHP = 0
-
-                        embed = discord.Embed(
-                            title='You have died.',
-                            description='The boss killed you before you killed it.',
-                            colour=discord.Colour.from_rgb(255, 95, 95)
-                        )
-                        embed2 = discord.Embed(
-                            title='Hera',
-                            description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: 0 *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                            colour=discord.Colour.red()
-                        )
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.send(embed=embed)
-                        await ctx.author.remove_roles(keyReq)
-                        await msg.edit(embed=embed2)
-
-                    else:
-                        l1 = random.choice(boss3_lootTable)
-                        l2 = random.choice(boss3_lootTable)
-                        l3 = random.choice(boss3_lootTable)
-                        embed = discord.Embed(
-                            title='Hera has been defeated',
-                            description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed2 = discord.Embed(
-                            title='Boss Defeated',
-                            description=f'{ctx.author.mention} has defeated Hera.\n \n __**Loot**__\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed3 = discord.Embed(
-                            title='Hera',
-                            description=f'\n\n__**Boss Health**__\n:heart: 0 *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star:',
-                            colour=discord.Colour.red()
-                        )
-                        if l1 == '[ITEM] Godly Scepter' or l2 == '[ITEM] Godly Scepter' or l3 == '[ITEM] Godly Scepter':
-                            await ctx.author.add_roles(weaponDrop)
-
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.author.remove_roles(keyReq)
-                        await logChannel.send(embed=embed2)
-                        await ctx.send(embed=embed)
-                        await msg.edit(embed=embed3)
-
-                elif playerHP <= 0:
-
-                    embed = discord.Embed(
-                        title='You have died.',
-                        description='The boss killed you before you killed it.',
-                        colour=discord.Colour.from_rgb(255, 95, 95)
-                    )
-                    embed2 = discord.Embed(
-                        title='Hera',
-                        description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: 0 *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                        colour=discord.Colour.red()
-                    )
-                    await ctx.send(f'{ctx.author.mention}')
-                    await ctx.send(embed=embed)
-                    await ctx.author.remove_roles(keyReq)
-                    await msg.edit(embed=embed2)
-
-        if bossName == 'Serpent' or bossName == 'serpent':
-
-            rankReq = discord.utils.find(lambda r: r.name == '[✦ XV] Worldkeeper', ctx.message.guild.roles)
-            keyReq = discord.utils.find(lambda r: r.name == '[🌏] World Key', ctx.message.guild.roles)
-            heraWeapon = discord.utils.find(lambda r: r.name == "[✨] Godly Scepter", ctx.message.guild.roles)
-            weaponDrop = discord.utils.find(lambda r: r.name == "[🌏] Eternal Hamarr", ctx.message.guild.roles)
-            # gaiaTitle = discord.utils.find(lambda r: r.name == "[⚔️] Slayer of the Earth", ctx.message.guild.roles)
-            logChannel = self.client.get_channel(873941431570546770)
-
-            if rankReq in ctx.author.roles and keyReq in ctx.author.roles:
-
-                bossHP = 225000
-                if heraWeapon in ctx.author.roles:
-                    dpsMin = 8000  # 16000
-                    dpsMax = 10000  # 20000
-                    playerHP = 6250  # 5000
-
-                elif weaponDrop in ctx.author.roles:
-                    dpsMin = 32000
-                    dpsMax = 40000
-                    playerHP = 6500
-
-                else:
-                    dpsMin = 2000
-                    dpsMax = 2500
-                    playerHP = 1500
-
-                embed = discord.Embed(
-                    title='Jörmungandr',
-                    description=f'__**Boss Health**__\n:heart: {bossHP}\n\n__**Player Health**__\n:heart: {playerHP}\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                    colour=discord.Colour.red()
-                )
-
-                msg = await ctx.send(embed=embed)
-                while bossHP > 0 and playerHP > 0:
-                    await asyncio.sleep(1)
-                    DPS = random.randint(dpsMin, dpsMax)
-                    playerDamage = random.randint(220, 280)
-                    bossHP = bossHP - DPS
-                    await asyncio.sleep(0.1)
-                    playerHP = playerHP - playerDamage
-
-                    embed2 = discord.Embed(
-                        title='Jörmungandr',
-                        description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                        colour=discord.Colour.red()
-                    )
-                    await msg.edit(embed=embed2)
-
-                if bossHP <= 0:
-
-                    if playerHP <= 0:
-                        if bossHP <= 0:
-                            bossHP = 0
-
-                        embed = discord.Embed(
-                            title='You have died.',
-                            description='The boss killed you before you killed it.',
-                            colour=discord.Colour.from_rgb(255, 95, 95)
-                        )
-                        embed2 = discord.Embed(
-                            title='Jörmungandr',
-                            description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: 0 *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star: :star:',
-                            colour=discord.Colour.red()
-                        )
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.send(embed=embed)
-                        await ctx.author.remove_roles(keyReq)
-                        await msg.edit(embed=embed2)
-
-                    else:
-                        l1 = random.choice(boss4_lootTable)
-                        l2 = random.choice(boss4_lootTable)
-                        l3 = random.choice(boss4_lootTable)
-                        embed = discord.Embed(
-                            title='Jörmungandr has been defeated',
-                            description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed2 = discord.Embed(
-                            title='Boss Defeated',
-                            description=f'{ctx.author.mention} has defeated Jörmungandr.\n \n __**Loot**__\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed3 = discord.Embed(
-                            title='Jörmungandr',
-                            description=f'\n\n__**Boss Health**__\n:heart: 0 *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star: :star:',
-                            colour=discord.Colour.red()
-                        )
-                        if l1 == '[ITEM] Eternal Hamarr' or l2 == '[ITEM] Eternal Hamarr' or l3 == '[ITEM] Eternal Hamarr':
-                            await ctx.author.add_roles(weaponDrop)
-
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.author.remove_roles(keyReq)
-                        await logChannel.send(embed=embed2)
-                        await ctx.send(embed=embed)
-                        await msg.edit(embed=embed3)
-
-                elif playerHP <= 0:
-
-                    embed = discord.Embed(
-                        title='You have died.',
-                        description='The boss killed you before you killed it.',
-                        colour=discord.Colour.from_rgb(255, 95, 95)
-                    )
-                    embed2 = discord.Embed(
-                        title='Jörmungandr',
-                        description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: 0 *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star: :star:',
-                        colour=discord.Colour.red()
-                    )
-                    await ctx.send(f'{ctx.author.mention}')
-                    await ctx.send(embed=embed)
-                    await ctx.author.remove_roles(keyReq)
-                    await msg.edit(embed=embed2)
-
-        # LIMITED TIME BOSS
-        if bossName == 'Asteria' or bossName == 'asteria':
-
-            bossName = "Asteria"
-            rankReq = discord.utils.find(lambda r: r.name == '[✦ XV] Worldkeeper', ctx.message.guild.roles)
-            keyReq = discord.utils.find(lambda r: r.name == '[✨] Stellar Key', ctx.message.guild.roles)
-            heraWeapon = discord.utils.find(lambda r: r.name == "[✨] Godly Scepter", ctx.message.guild.roles)
-            jorgWeapon = discord.utils.find(lambda r: r.name == "[🌏] Eternal Hamarr", ctx.message.guild.roles)
-            titleDrop = discord.utils.find(lambda r: r.name == "[✨] S11 Celestial Slayer", ctx.message.guild.roles)
-            logChannel = self.client.get_channel(873941431570546770)
-
-            if rankReq in ctx.author.roles:  # and keyReq in ctx.author.roles:
-
-                bossHP = 175000
-                if heraWeapon in ctx.author.roles:
-                    dpsMin = 8000  # 16000
-                    dpsMax = 10000  # 20000
-                    playerHP = 6250  # 5000
-
-                elif jorgWeapon in ctx.author.roles:
-                    dpsMin = 32000
-                    dpsMax = 40000
-                    playerHP = 6500
-
-                else:
-                    dpsMin = 2000
-                    dpsMax = 2500
-                    playerHP = 1500
-
-                embed = discord.Embed(
-                    title='Asteria',
-                    #description=f'__**Boss Health**__\n:heart: {bossHP}\n\n__**Player Health**__\n:heart: {playerHP}\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                    colour=discord.Colour.gold()
-                )
-                embed.add_field(name="Boss Health", value = f":heart: {bossHP}", inline=True)
-                embed.add_field(name="Player Health", value = f":heart: {playerHP}", inline=True)
-                embed.add_field(name="Last Action", value="`Boss initiated.", inline=False)
-                embed.add_field(name="Difficulty", value="star: :star: :star: :star: :star:", inline=False)
-
-                s = 0;
-                msg = await ctx.send(embed=embed)
-                while bossHP > 0 and playerHP > 0:
-
-                    await asyncio.sleep(1.5)
-                    # Setting up Damage
-                    DPS = random.randint(dpsMin, dpsMax)
-                    playerDamage = random.randint(250, 320)
-
-                    bossHP = bossHP - DPS
-                    embed2 = discord.Embed(
-                        title='Asteria',
-                        #description=f'\n\n__**Boss Health**__\n:heart: {bossHP}\n__**Player Health**__\n:heart: {playerHP}\n\n`- {ctx.author.name} dealt {DPS} damage to the boss!`\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                        colour=discord.Colour.gold()
-                    )
-                    embed2.add_field(name="Boss Health", value = f":heart: **{bossHP:,}**", inline=True)
-                    embed2.add_field(name="Player Health", value = f":heart: **{playerHP:,}**", inline=True)
-                    embed2.add_field(name="Last Action", value=f"`- {ctx.author.name} dealt {DPS:,} damage to the boss!`", inline=False)
-                    embed2.add_field(name="Difficulty", value=":star: :star: :star: :star: :star:", inline=False)
-                    await msg.edit(embed=embed2)
-
-                    await asyncio.sleep(1.5)
-                    playerHP = playerHP - playerDamage
-
-                    embed3 = discord.Embed(
-                        title='Asteria',
-                        #description=f'\n\n__**Boss Health**__\n:heart: {bossHP}\n__**Player Health**__\n:heart: {playerHP}\n\n`- {bossName} dealt {playerDamage} damaged to the player.`\n\n__**Difficulty**__\n:star: :star: :star: :star:',
-                        colour=discord.Colour.gold()
-                    )
-                    embed3.add_field(name="Boss Health", value = f":heart: **{bossHP:,}**", inline=True)
-                    embed3.add_field(name="Player Health", value = f":heart: **{playerHP:,}**", inline=True)
-                    embed3.add_field(name="Last Action", value=f"`- {bossName} dealt {playerDamage:,} damaged to the player.`", inline=False)
-                    embed3.add_field(name="Difficulty", value=":star: :star: :star: :star: :star:", inline=False)
-                    await msg.edit(embed=embed3)
-
-                if bossHP <= 0:
-
-                    if playerHP <= 0:
-                        if bossHP <= 0:
-                            bossHP = 0
-
-                        embed = discord.Embed(
-                            title='You have died.',
-                            description='The boss killed you before you killed it.',
-                            colour=discord.Colour.from_rgb(255, 95, 95)
-                        )
-                        embed2 = discord.Embed(
-                            title='Asteria',
-                            description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: 0 *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star: :star:',
-                            colour=discord.Colour.gold()
-                        )
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.send(embed=embed)
-                        await ctx.author.remove_roles(keyReq)
-                        await msg.edit(embed=embed2)
-
-                    else:
-                        l1 = random.choice(boss5_lootTable)
-                        l2 = random.choice(boss5_lootTable)
-                        l3 = random.choice(boss5_lootTable)
-                        embed = discord.Embed(
-                            title='Asteria has been defeated',
-                            description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed2 = discord.Embed(
-                            title='Boss Defeated',
-                            description=f'{ctx.author.mention} has defeated Asteria.\n \n __**Loot**__\n- {l1}\n- {l2}\n- {l3}',
-                            colour=discord.Colour.from_rgb(0, 208, 255)
-                        )
-                        embed3 = discord.Embed(
-                            title='Asteria',
-                            description=f'\n\n__**Boss Health**__\n:heart: 0 *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star: :star:',
-                            colour=discord.Colour.red()
-                        )
-                        if l1 == '[Title] Celestial Slayer' or l2 == '[Title] Celestial Slayer' or l3 == '[Title] Celestial Slayer':
-                            await ctx.author.add_roles(titleDrop)
-
-                        await ctx.send(f'{ctx.author.mention}')
-                        await ctx.author.remove_roles(keyReq)
-                        await logChannel.send(embed=embed2)
-                        await ctx.send(embed=embed)
-                        await msg.edit(embed=embed3)
-
-                elif playerHP <= 0:
-
-                    embed = discord.Embed(
-                        title='You have died.',
-                        description='The boss killed you before you killed it.',
-                        colour=discord.Colour.from_rgb(255, 95, 95)
-                    )
-                    embed2 = discord.Embed(
-                        title='Jörmungandr',
-                        description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: 0 *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star: :star:',
-                        colour=discord.Colour.red()
-                    )
-                    await ctx.send(f'{ctx.author.mention}')
-                    await ctx.send(embed=embed)
-                    await ctx.author.remove_roles(keyReq)
-                    await msg.edit(embed=embed2)
-    @boss.error
-    async def boss_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            remaining_time = str(datetime.timedelta(seconds=int(error.retry_after)))
-            embed = discord.Embed(
-                title='Boss Cooldown',
-                description=f'Woah, slow down! You can only attempt to fight this boss every **10 minutes**. Try again in **{remaining_time}** minutes!',
-                colour=discord.Colour.from_rgb(0, 208, 255)
-            )
-            await ctx.send(embed=embed)
-
-    @commands.command()
-    async def bosstest(self, ctx):
-
-        x = 5
-        if x == 5:
-            bossHP = 1200000
-            playerHP = 5000
-            embed = discord.Embed(
-                title='Hera',
-                description=f'__**Boss Health**__\n:heart: {bossHP}\n\n__**Player Health**__\n:heart: {playerHP}\n\n__**Difficulty**__\n:star: :star: :star: :star: :star:',
-                colour=discord.Colour.red()
-            )
-
-            msg = await ctx.send(embed=embed)
-            while bossHP > 0 and playerHP > 0:
-                await asyncio.sleep(1)
-                DPS = random.randint(1000, 15000)
-                playerDamage = random.randint(800, 1500)
-                bossHP = bossHP - DPS
-
-                await asyncio.sleep(0.1)
-                playerHP = playerHP - playerDamage
-
-                embed2 = discord.Embed(
-                    title='Testing Boss',
-                    description=f'\n\n__**Boss Health**__\n:heart: {bossHP} *[-{DPS}]*\n\n__**Player Health**__\n:heart: {playerHP} *[-{playerDamage}]*\n\n__**Difficulty**__\n:star: :star: :star: :star: :star: :star:',
-                    colour=discord.Colour.red()
-                )
-
-                await msg.edit(embed=embed2)
-
-            if playerHP <= 0:
-                embed = discord.Embed(
-                    title='You have died.',
-                    description='The boss killed you before you killed it.',
-                    colour=discord.Colour.from_rgb(255, 95, 95)
-                )
-                await ctx.send(f'{ctx.author.mention}')
-                await ctx.send(embed=embed)
-
-    @commands.command(aliases=['bosses'])
-    async def bosslist(self, ctx):
-
-        embed = discord.Embed(
-            title='Boss List - Season 11',
-            description='Bosses can only be fought every 10 minutes, considering you have the right requirements.\n\n__**Gaia**__\n\n - <@&867386940403875851>\n- <@&867386933931016243>\n\n__**Aithusa**__\n\n - <@&873806680008310847>\n - <@&870554289762877500>\n - <@&873806689655214140>',
-            colour=discord.Colour.from_rgb(0, 208, 255)
+        await ctx.send("What boss are you trying to fight?")
+
+    @boss.command(aliases = ["Minion"])
+    @commands.cooldown(1, 1, BucketType.user)
+    async def minion(self, ctx):
+
+        # Weapon drop needs to be made
+        weaponDrop = find(lambda r: r.name == "Minion Drop Here", ctx.message.guild.roles)
+        logs = self.client.get_channel(873941431570546770)
+
+        atkspeed = 1.5
+        boss = NewBoss(
+            name="Raven's Minion",
+            desc="Temp Desc",
+            health=5000,
+            mindamage=80,
+            maxdamage=120,
+            loot=[],
+        )
+        # name, health, originalhealth, mindamage, maxdamage, agility
+        player = Player(
+            name=ctx.author.name,
+            health=2500,
+            originalhealth=2500,
+            mindamage=150,
+            maxdamage=300,
+            agility=0,
         )
 
-        await ctx.send(embed=embed)
+        em = discord.Embed(
+            title=boss.name,
+            colour=discord.Colour.from_rgb(0, 208, 255)
+        )
+        em.add_field(name="Boss Health", value = f":heart: {boss.health:,}", inline=True)
+        em.add_field(name="Player Health", value = f":heart: {player.health:,}", inline=True)
+        em.add_field(name="Last Action", value="`Boss initiated.`", inline=False)
+        em.add_field(name="Difficulty", value=":star:", inline=False)
+        em.timestamp = datetime.utcnow()
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def getrewards(self, ctx, boss):
+        msg = await ctx.send(embed=em)
 
-        if boss == "Kraken" or boss == "kraken":
-            l1 = random.choice(boss1_lootTable)
-            l2 = random.choice(boss1_lootTable)
-            l3 = random.choice(boss1_lootTable)
-            embed = discord.Embed(
-                title='Kraken Loot',
-                description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
+        '''
+        Potion Work 
+        '''
+
+        # Boss loop
+        while (boss.health > 0) and (player.health) > 0:
+
+            await asyncio.sleep(atkspeed)
+
+            player_dps = random.randint(player.mindamage, player.maxdamage)
+            boss.health -= player_dps
+            em2 = discord.Embed(
+                title=boss.name,
                 colour=discord.Colour.from_rgb(0, 208, 255)
             )
-            await ctx.send(embed=embed)
+            em2.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
+            em2.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
+            em2.add_field(name="Last Action",value=f"> {ctx.author.name} dealt :crossed_swords: {player_dps:,}", inline=False)
+            em2.timestamp = datetime.utcnow()
+            await msg.edit(embed=em2)
 
-        if boss == 'gorgon' or boss == 'Gorgon':
-            l1 = random.choice(boss2_lootTable)
-            l2 = random.choice(boss2_lootTable)
-            l3 = random.choice(boss2_lootTable)
-            embed = discord.Embed(
-                title='Gorgon Loot',
-                description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
+            await asyncio.sleep(atkspeed)
+
+            boss_dps = random.randint(boss.mindamage, boss.maxdamage)
+            player.health -= boss_dps
+            em3 = discord.Embed(
+                title=boss.name,
                 colour=discord.Colour.from_rgb(0, 208, 255)
             )
-            await ctx.send(embed=embed)
+            em3.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
+            em3.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
+            em3.add_field(name="Last Action",value=f"> {boss.name} dealt :crossed_swords: {boss_dps:,}", inline=False)
+            em3.timestamp = datetime.utcnow()
+            await msg.edit(embed=em3)
 
-        if boss == "Hera" or boss == "hera":
-            l1 = random.choice(boss3_lootTable)
-            l2 = random.choice(boss3_lootTable)
-            l3 = random.choice(boss3_lootTable)
-            embed = discord.Embed(
-                title='Hera Loot',
-                description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
+            # Boss has died
+            if boss.health <= 0:
+
+                boss.health = 0
+                # Check if player is also dead
+                if player.health <= 0:
+                    #if boss.health <= 0:
+                    #    boss.health = 0
+                    player.health = 0
+                    em = discord.Embed(title="Boss has defeated you.",description="You were weakened and had to flee the boss fight.",colour=discord.Colour.from_rgb(255, 95, 95))
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(ctx.author.mention, embed=em)
+                    # await ctx.author.remove_roles(keyreq)
+
+                # Boss defeated
+                else:
+
+                    Economy = eco.find_one({"memberid":ctx.author.id})
+                    quest = Economy["currentQuest"]
+
+                    if quest == "Merlin1":
+                        eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Merlin2"}})
+
+                        em = discord.Embed(title="Quest Completed!",description="Successfully completed Merlin's quest. Head back to >quest Merlin to get your next quest.",colour=discord.Colour.from_rgb(95, 255, 95))
+                        em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+                        em.timestamp = datetime.utcnow()
+                        await ctx.send(embed=em)
+
+                    # LOOT
+                    em = discord.Embed(title="Boss has fled.",description="You forced the boss to flee.",colour=discord.Colour.from_rgb(95, 255, 95))
+                    em.add_field(name="Loot", value="> Minion's Drop (100%)", inline=False)
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(ctx.author.mention, embed=em)
+                    # await ctx.author.remove_roles(keyreq)
+
+            elif player.health <= 0:
+                player.health = 0
+                em = discord.Embed(title="You fled.",description="> You were overpowered and forced to flee, the boss escaped.", colour=discord.Colour.from_rgb(255, 95, 95))
+                em.timestamp = datetime.utcnow()
+                return await ctx.send(embed=em)
+                # await ctx.author.remove_roles(keyreq)
+
+    @boss.command(aliases = ["Follower"])
+    @commands.cooldown(1, 1, BucketType.user)
+    async def follower(self, ctx):
+
+        # Weapon drop needs to be made
+        cursed_staff = find(lambda r: r.name == "✧ Cursed Staff", ctx.message.guild.roles)
+
+        weapon_drop = find(lambda r: r.name == "✪ Raven's Dagger", ctx.message.guild.roles)
+        amulet_drop = find(lambda r: r.name == "✪ Darkness Amulet", ctx.message.guild.roles)
+        logs = self.client.get_channel(873941431570546770)
+
+        atkspeed = 1.5
+        boss = NewBoss(
+            name="Raven's Follower",
+            desc="Temp Desc",
+            health=7500,
+            mindamage=200,
+            maxdamage=250,
+            loot=follower_loot,
+        )
+        # name, health, originalhealth, mindamage, maxdamage, agility
+        player = Player(
+            name=ctx.author.name,
+            health=2500,
+            originalhealth=2500,
+            mindamage=150,
+            maxdamage=300,
+            agility=0,
+        )
+
+        if cursed_staff in ctx.author.roles:
+            player.health += 500
+            player.originalhealth += 500
+            player.mindamage += 350
+            player.maxdamage += 350
+
+        em = discord.Embed(
+            title=boss.name,
+            colour=discord.Colour.from_rgb(0, 208, 255)
+        )
+        em.add_field(name="Boss Health", value = f":heart: {boss.health:,}", inline=True)
+        em.add_field(name="Player Health", value = f":heart: {player.health:,}", inline=True)
+        em.add_field(name="Last Action", value="`Boss initiated.`", inline=False)
+        em.add_field(name="Difficulty", value=":star:", inline=False)
+        em.timestamp = datetime.utcnow()
+
+        msg = await ctx.send(embed=em)
+
+        '''
+        Potion Work 
+        '''
+
+        # Boss loop
+        while (boss.health > 0) and (player.health) > 0:
+
+            await asyncio.sleep(atkspeed)
+
+            player_dps = random.randint(player.mindamage, player.maxdamage)
+            if player.health <= 0:
+                player.health = 0
+                player_dps = 0
+            boss.health -= player_dps
+            em2 = discord.Embed(
+                title=boss.name,
                 colour=discord.Colour.from_rgb(0, 208, 255)
             )
-            await ctx.send(embed=embed)
+            em2.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
+            em2.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
+            em2.add_field(name="Last Action",value=f"> {ctx.author.name} dealt :crossed_swords: {player_dps:,}", inline=False)
+            em2.timestamp = datetime.utcnow()
+            await msg.edit(embed=em2)
 
-        if boss == "Serpent" or boss == "serpent":
-            l1 = random.choice(boss4_lootTable)
-            l2 = random.choice(boss4_lootTable)
-            l3 = random.choice(boss4_lootTable)
-            embed = discord.Embed(
-                title='Serpent Loot',
-                description=f'__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}',
+            await asyncio.sleep(atkspeed)
+
+            boss_dps = random.randint(boss.mindamage, boss.maxdamage)
+            if boss.health <= 0:
+                boss.health = 0
+                boss_dps = 0
+            player.health -= boss_dps
+            em3 = discord.Embed(
+                title=boss.name,
                 colour=discord.Colour.from_rgb(0, 208, 255)
             )
-            await ctx.send(embed=embed)
+            em3.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
+            em3.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
+            em3.add_field(name="Last Action",value=f"> {boss.name} dealt :crossed_swords: {boss_dps:,}", inline=False)
+            em3.timestamp = datetime.utcnow()
+            await msg.edit(embed=em3)
 
-        if boss == "Asteria" or boss == "asteria":
-            l1 = random.choice(boss5_lootTable)
-            l2 = random.choice(boss5_lootTable)
-            l3 = random.choice(boss5_lootTable)
-            embed = discord.Embed(
-                description = f"__**Loot**__\n\n- {l1}\n- {l2}\n- {l3}",
-                colour = discord.Colour.from_rgb(0, 208, 255)
+            # Boss has died
+            if boss.health <= 0:
+
+                boss.health = 0
+                # Check if player is also dead
+                if player.health <= 0:
+                    #if boss.health <= 0:
+                    #    boss.health = 0
+                    player.health = 0
+                    em = discord.Embed(title="Boss has defeated you.",description="You were weakened and had to flee the boss fight.",colour=discord.Colour.from_rgb(255, 95, 95))
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(ctx.author.mention, embed=em)
+                    # await ctx.author.remove_roles(keyreq)
+
+                # Boss defeated
+                else:
+
+                    Economy = eco.find_one({"memberid":ctx.author.id})
+                    quest = Economy["currentQuest"]
+
+                    # Defeat Boss 10 times
+                    if quest == "Merlin3":
+                        
+                        Economy = eco.find_one({"memberid":ctx.author.id})
+                        boss_kills = Economy["totalBossKills"]
+                        quest_objective = Economy["questObjectiveCounter"]
+
+                        eco.update_one({"memberid":ctx.author.id},{"$set":{"totalBossKills":boss_kills+1}})
+                        eco.update_one({"memberid":ctx.author.id},{"$set":{"questObjectiveCounter":quest_objective+1}})
+                        quest_instance = True
+
+                        quest_objective_updated = Economy["questObjectiveCounter"]
+                        if quest_objective_updated >= 10:
+
+
+                        #eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Merlin2"}})
+
+                            em = discord.Embed(title="Quest Completed!",description="Successfully completed Merlin's quest. Head back to >quest Merlin to get your next quest.",colour=discord.Colour.from_rgb(95, 255, 95))
+                            em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+                            em.timestamp = datetime.utcnow()
+                            await ctx.send(embed=em)
+                            eco.update_one({"memberid":ctx.author.id},{"$set":{"questObjectiveCounter":0}})
+                            eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Merlin4"}})
+
+                    # LOOT
+                    em = discord.Embed(title="Boss has fled.",description="You forced the boss to flee.",colour=discord.Colour.from_rgb(95, 255, 95))
+                    
+                    l1 = random.choice(boss.loot)
+                    l2 = random.choice(boss.loot)
+                    l3 = random.choice(boss.loot)
+
+                    if l1 == "Darkness Amulet" or l2 == "Darkness Amulet" or l3 == "Darkness Amulet":
+                        await ctx.author.add_roles(amulet_drop)
+
+                    if l1 == "Raven's Dagger" or l2 == "Raven's Dagger" or l3 == "Raven's Dagger":
+                        await ctx.author.add_roles(weapon_drop)
+                    
+                    em.add_field(name="Loot", value=f"> {l1}\n> {l2}\n> {l3}", inline=False)
+                    em.timestamp = datetime.utcnow()
+
+                    if quest_instance == False:
+                        Economy = eco.find_one({"memberid":ctx.author.id})
+                        boss_kills = Economy["totalBossKills"]
+                        eco.update_one({"memberid":ctx.author.id},{"$set":{"totalBossKills":boss_kills+1}})
+
+                    return await ctx.send(ctx.author.mention, embed=em)
+                    # await ctx.author.remove_roles(keyreq)
+
+            elif player.health <= 0:
+                player.health = 0
+                em = discord.Embed(title="You fled.",description="> You were overpowered and forced to flee, the boss escaped.", colour=discord.Colour.from_rgb(255, 95, 95))
+                em.timestamp = datetime.utcnow()
+                return await ctx.send(embed=em)
+                # await ctx.author.remove_roles(keyreq)
+
+    @boss.command(aliases = ["Gryphon"])
+    @commands.cooldown(1, 1, BucketType.user)
+    async def gryphon(self, ctx):
+
+        # Weapon drop needs to be made
+        raven_dagger = find(lambda r: r.name == "✪ Raven's Dagger", ctx.message.guild.roles)
+
+        feather = find(lambda r: r.name == "🕊️ Gryphon's Feather", ctx.message.guild.roles)
+        claw = find(lambda r: r.name == "🐉 Gryphon's Claw", ctx.message.guild.roles)
+        heart = find(lambda r: r.name == "❤️ Gryphon's Heart", ctx.message.guild.roles)
+        azure_splitter = find(lambda r: r.name == "⚜️ Azure Splitter", ctx.message.guild.roles)
+        logs = self.client.get_channel(873941431570546770)
+
+        atkspeed = 1.5
+        boss = NewBoss(
+            name="Gryphon",
+            desc="Temp Desc",
+            health=10000,
+            mindamage=300,
+            maxdamage=475,
+            loot=gryphon_loot,
+        )
+        # name, health, originalhealth, mindamage, maxdamage, agility
+        player = Player(
+            name=ctx.author.name,
+            health=2500,
+            originalhealth=2500,
+            mindamage=150,
+            maxdamage=300,
+            agility=0,
+        )
+
+        if raven_dagger in ctx.author.roles:
+            player.health += 2000
+            player.originalhealth += 2000
+            player.mindamage += 625
+            player.maxdamage += 625
+
+        elif azure_splitter in ctx.author.roles:
+            player.health += 2500
+            player.originalhealth += 2500
+            player.mindamage += (player.mindamage + (player.mindamage * (10/100))) + 750
+            player.maxdamage += (player.maxdamage + (player.maxdamage * (10/100))) + 750
+
+        em = discord.Embed(
+            title=boss.name,
+            colour=discord.Colour.from_rgb(0, 208, 255)
+        )
+        em.add_field(name="Boss Health", value = f":heart: {boss.health:,}", inline=True)
+        em.add_field(name="Player Health", value = f":heart: {player.health:,}", inline=True)
+        em.add_field(name="Last Action", value="`Boss initiated.`", inline=False)
+        em.add_field(name="Difficulty", value=":star:", inline=False)
+        em.timestamp = datetime.utcnow()
+
+        msg = await ctx.send(embed=em)
+
+        '''
+        Potion Work 
+        '''
+
+        # Boss loop
+        while (boss.health > 0) and (player.health) > 0:
+
+            await asyncio.sleep(atkspeed)
+
+            player_dps = random.randint(player.mindamage, player.maxdamage)
+            if player.health <= 0:
+                player.health = 0
+                player_dps = 0
+
+            boss.health -= player_dps
+            em2 = discord.Embed(
+                title=boss.name,
+                colour=discord.Colour.from_rgb(0, 208, 255)
             )
-            await ctx.send(embed=embed)
+            em2.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
+            em2.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
+            em2.add_field(name="Last Action",value=f"> {ctx.author.name} dealt :crossed_swords: {player_dps:,}", inline=False)
+            em2.timestamp = datetime.utcnow()
+            await msg.edit(embed=em2)
 
+            await asyncio.sleep(atkspeed)
+
+            boss_dps = random.randint(boss.mindamage, boss.maxdamage)
+            if boss.health <= 0:
+                boss.health = 0
+                boss_dps = 0
+
+            player.health -= boss_dps
+            em3 = discord.Embed(
+                title=boss.name,
+                colour=discord.Colour.from_rgb(0, 208, 255)
+            )
+            em3.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
+            em3.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
+            em3.add_field(name="Last Action",value=f"> {boss.name} dealt :crossed_swords: {boss_dps:,}", inline=False)
+            em3.timestamp = datetime.utcnow()
+            await msg.edit(embed=em3)
+
+            # Boss has died
+            if boss.health <= 0:
+
+                boss.health = 0
+                # Check if player is also dead
+                if player.health <= 0:
+                    #if boss.health <= 0:
+                    #    boss.health = 0
+                    player.health = 0
+                    em = discord.Embed(title="Boss has defeated you.",description="You were weakened and had to flee the boss fight.",colour=discord.Colour.from_rgb(255, 95, 95))
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(ctx.author.mention, embed=em)
+                    # await ctx.author.remove_roles(keyreq)
+
+                # Boss defeated
+                else:
+
+                    Economy = eco.find_one({"memberid":ctx.author.id})
+                    kills = Economy["totalBossKills"]
+
+                    eco.update_one({"memberid":ctx.author.id},{"$set":{"totalBossKills":kills+1}})
+
+                    # LOOT
+                    em = discord.Embed(title="Boss has fled.",description="You forced the boss to flee.",colour=discord.Colour.from_rgb(95, 255, 95))
+                    
+                    l1 = random.choice(boss.loot)
+                    l2 = random.choice(boss.loot)
+                    l3 = random.choice(boss.loot)
+
+                    if l1 == ":feather: **Gryphon's Feather**" or l2 == ":feather: **Gryphon's Feather**" or l3 == ":feather: **Gryphon's Feather**":
+                        await ctx.author.add_roles(feather)
+
+                    if l1 == ":eagle: **Gryphon's Claw**" or l2 == ":eagle: **Gryphon's Claw**" or l3 == ":eagle: **Gryphon's Claw**":
+                        await ctx.author.add_roles(claw)
+
+                    if l1 == ":heart: **Gryphon's Heart**" or l2 == ":heart: **Gryphon's Heart**" or l3 == ":heart: **Gryphon's Heart**":
+                        await ctx.author.add_roles(heart)
+                    
+                    em.add_field(name="Loot", value=f"> {l1}\n> {l2}\n> {l3}", inline=False)
+                    em.timestamp = datetime.utcnow()
+
+                    if quest_instance == False:
+                        Economy = eco.find_one({"memberid":ctx.author.id})
+                        boss_kills = Economy["totalBossKills"]
+                        eco.update_one({"memberid":ctx.author.id},{"$set":{"totalBossKills":boss_kills+1}})
+
+                    return await ctx.send(ctx.author.mention, embed=em)
+                    # await ctx.author.remove_roles(keyreq)
+
+            elif player.health <= 0:
+                player.health = 0
+                em = discord.Embed(title="You fled.",description="> You were overpowered and forced to flee, the boss escaped.", colour=discord.Colour.from_rgb(255, 95, 95))
+                em.timestamp = datetime.utcnow()
+                return await ctx.send(embed=em)
+                # await ctx.author.remove_roles(keyreq)
 
 def setup(client):
     client.add_cog(Boss(client))

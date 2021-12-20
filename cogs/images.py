@@ -1,16 +1,167 @@
-import discord
+import nextcord as discord
 import random
 from random import choice
 import datetime
-from discord.ext import commands
-from discord.ext.commands import BucketType
+from nextcord.ext import commands
+from nextcord.ext.commands import BucketType
+import io
 from io import BytesIO
+import aiohttp
 from PIL import Image, ImageFilter, ImageFont, ImageDraw 
 
 class Images(commands.Cog):
 
     def __init__(self, client):
         self.client = client
+
+    #https://some-random-api.ml/canvas/color?avatar=https://cdn.discordapp.com/avatars/560789882738573324/bc220b0eeeabbe234026e4881f3c3b9c.png&username=Telk&displayname=Telk&comment=Hello
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def tweet(self, ctx, comment):
+
+        saved = ctx.author.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=ctx.author.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/tweet?avatar={saved}&username={ctx.author.name}&displayname={ctx.author.name}&comment={comment}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def ytcomment(self, ctx, comment):
+
+        saved = ctx.author.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=ctx.author.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/youtube-comment?avatar={saved}&username={ctx.author.name}&comment={comment}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def lolipolice(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/lolice?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def hornylicense(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/horny?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def simpcard(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/simpcard?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def pixelate(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/pixelate?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def jail(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/jail?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def glass(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/glass?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command(aliases = ['missionsuccess', 'missionpassed'])
+    @commands.cooldown(1, 10, BucketType.user)
+    async def passed(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/passed?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def wasted(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/wasted?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def gaypic(self, ctx, member: discord.Member=None):
+
+        if member is None:
+            member = ctx.author
+
+        saved = member.avatar_url_as(static_format="png") 
+        embed = discord.Embed(colour=member.colour)
+
+        embed.set_image(url=f"https://some-random-api.ml/canvas/gay?avatar={saved}")
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
 
     @commands.command()
     @commands.cooldown(1, 5, BucketType.user)
@@ -20,7 +171,7 @@ class Images(commands.Cog):
             member = ctx.author
 
         wanted = Image.open("wanted.jpg")
-        asset = member.avatar_url_as(size=128)
+        asset = member.avatar.with_format("png")
         data = BytesIO(await asset.read())
         profilepic = Image.open(data)
 
@@ -99,8 +250,8 @@ class Images(commands.Cog):
         image_editable.text((515, 250), title_text, (255, 255, 255), font=percent_font)
         image_editable.text((450, 70), "Ship Meter", (255, 255, 255), font=title_font)
 
-        asset = user.avatar_url_as(size=512)
-        asset2 = user2.avatar_url_as(size=512)
+        asset = user.avatar.with_format('png')
+        asset2 = user2.avatar.with_format('png')
         data = BytesIO(await asset.read())
         data2 = BytesIO(await asset2.read())
         pic1 = Image.open(data)

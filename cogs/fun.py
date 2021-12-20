@@ -1,10 +1,16 @@
-import discord
+# Main Imports
+
+import nextcord as discord
 import datetime
-from main import timeNow
 import asyncio
-from discord.ext import commands
-from discord.ext.commands import BucketType
 import random
+import aiohttp
+
+# Side Imports
+
+from main import timeNow
+from nextcord.ext import commands
+from nextcord.ext.commands import BucketType
 
 #---------------------COG SETUP---------------------#
 
@@ -12,6 +18,17 @@ class FunCmds(commands.Cog):
 
     def __init__(self, client):
         self.client = client
+
+    @commands.command()
+    async def elite(self, ctx):
+
+        em = discord.Embed(
+            title = "Elite YouTube",
+            description = "Very cool youtuber that does videos and shit you should [subscribe](https://m.youtube.com/channel/UC0eLyb_Z4FKrDN7JS_duvWQ).",
+            colour = discord.Colour.from_rgb(71, 160, 196)
+        )
+        em.timestamp = datetime.datetime.utcnow()
+        await ctx.reply(embed=em, mention_author=False)
 
     #8ball#--------------#
     @commands.command(help = "- Ask the Magic 8ball a question.\n\n__**Usage**__\n- `!8ball <question>`", aliases = ['8ball'])
@@ -43,32 +60,9 @@ class FunCmds(commands.Cog):
             description = f'**{question}**: {random.choice(responses)}',
             colour = discord.Colour.from_rgb(0, 155, 180)
         )
-        embed.set_author(name='🎱  8Ball Machine', icon_url=ctx.author.avatar_url)
+        embed.set_author(name='🎱  8Ball Machine', icon_url=ctx.author.avatar.url)
         embed.timestamp = datetime.datetime.utcnow()
         await ctx.send(embed=embed)
-
-    #--------------#
-    @_8ball.error
-    async def _8ball_error(self, ctx, error):
-        
-        #if isinstance(error, commands.CommandOnCooldown):
-        #    embed = discord.Embed(
-        #        description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-        #        colour = discord.Colour.from_rgb(255, 91, 91)
-        #    )
-        #    embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-        #    embed.timestamp = datetime.datetime.utcnow()
-        #    await ctx.send(embed=embed)
-
-        if isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!8ball <question>.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.timestamp = datetime.datetime.utcnow()
-
-            await ctx.send(embed=embed)
 
     #pp#--------------#
     @commands.command()
@@ -113,7 +107,7 @@ class FunCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
 
-            embed.set_author(name=f'Penis Machine', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'Penis Machine', icon_url=ctx.author.avatar.url)
             embed.timestamp = datetime.datetime.utcnow()
             await ctx.send(embed=embed)
 
@@ -123,23 +117,9 @@ class FunCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
 
-            embed.set_author(name=f'Penis Machine', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'Penis Machine', icon_url=ctx.author.avatar.url)
             embed.timestamp = datetime.datetime.utcnow()
             await ctx.send(embed=embed)
-
-    #--------------#
-    @pp.error
-    async def pp_error(self, ctx: commands.Context, error: commands.CommandError):
-        
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-            embed.timestamp = datetime.datetime.utcnow()
-
-        await ctx.send(embed=embed)
     
     #luck#--------------#
     @commands.command()
@@ -153,32 +133,9 @@ class FunCmds(commands.Cog):
             description = f"The chance of **{thing}** is **{x}%**!",
             colour = discord.Colour.from_rgb(0, 155, 180)
         )
-        embed.set_author(name=f'Luck Machine', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'Luck Machine', icon_url=ctx.author.avatar.url)
         embed.timestamp = datetime.datetime.utcnow()
         await ctx.send(embed=embed)
-
-    #--------------#
-    @luck.error
-    async def luck_error(self, ctx: commands.Context, error: commands.CommandError):
-        
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-            embed.timestamp = datetime.datetime.utcnow()
-            await ctx.send(embed=embed)
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!luck <statement>`",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.timestamp = datetime.datetime.utcnow()
-
-            await ctx.send(embed=embed)
 
     #rps#--------------#
     @commands.command()
@@ -237,7 +194,7 @@ class FunCmds(commands.Cog):
                 description = winner,
                 colour = discord.Colour.from_rgb(0, 208, 255)
             )
-            embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar.url)
             embed.timestamp = datetime.datetime.utcnow()
             await ctx.send(embed=embed)
 
@@ -246,30 +203,9 @@ class FunCmds(commands.Cog):
                 description = "**Invalid Input**: `!rps <rock/paper/scissors`.",
                 colour = discord.Colour.from_rgb(255, 75, 75)
             )
-            embed.set_author(name=f'Error', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'Error', icon_url=ctx.author.avatar.url)
             embed.timestamp = datetime.datetime.utcnow()
 
-    #--------------#
-    @rps.error
-    async def rps_error(self, ctx: commands.Context, error: commands.CommandError):
-        
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!rps <rock / paper / scissors>`.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-
-        await ctx.send(embed=embed)
 
     #Gay#--------------#
     @commands.command()
@@ -290,32 +226,9 @@ class FunCmds(commands.Cog):
             )
 
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Gay Machine', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'Gay Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
     
-    #--------------#
-    @gay.error
-    async def gay_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-        
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!gay (user)",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.footer(text=f'Arguments in () are optional.')
-
-        await ctx.send(embed=embed)
-
     #Racist#--------------#
     @commands.command()
     @commands.cooldown(1, 10, BucketType.user)
@@ -328,7 +241,7 @@ class FunCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Racist Machine', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'Racist Machine', icon_url=ctx.author.avatar.url)
             await ctx.send(embed=embed)
 
         else:
@@ -337,31 +250,9 @@ class FunCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Racist Machine', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'Racist Machine', icon_url=ctx.author.avatar.url)
             await ctx.send(embed=embed)
         
-    #--------------#
-    @racist.error
-    async def racist_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!racist (user)",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.footer(text=f'Arguments in () are optional.')
-
-        await ctx.send(embed=embed)
 
     #Pedo#--------------#
     @commands.command()
@@ -382,30 +273,7 @@ class FunCmds(commands.Cog):
             )
         
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Pedo Machine', icon_url=ctx.author.avatar_url)
-        await ctx.send(embed=embed)
-
-    #--------------#
-    @pedo.error
-    async def pedo_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
-        
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!pedo (user)",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.footer(text=f'Arguments in () are optional.')
-
+        embed.set_author(name=f'Pedo Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
     #Slap#--------------#
@@ -441,7 +309,7 @@ class FunCmds(commands.Cog):
 
         gif = random.choice(gifs)
         embed.set_image(url=gif)
-        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar.url)
         embed.timestamp = datetime.datetime.utcnow()
         await ctx.send(embed=embed)
 
@@ -456,30 +324,8 @@ class FunCmds(commands.Cog):
         )
 
         embed.set_image(url='https://media.giphy.com/media/Do5GRTYRIhSFy/giphy.gif')
-        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar.url)
         embed.timestamp = datetime.datetime.utcnow()
-        await ctx.send(embed=embed)
-
-    #--------------#
-    @thousandyearsofdeath.error
-    async def thousandyearsofdeath_error(self, ctx: commands.Context, error: commands.CommandError):
-        
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = "Invalid Arguments: `!thousandyearsofdeath <user>`.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-
         await ctx.send(embed=embed)
 
     #RandomNum#----------#
@@ -491,31 +337,9 @@ class FunCmds(commands.Cog):
             description = f'{random.randint(min,max)}',
             colour = discord.Colour.from_rgb(0, 155, 180)
         )   
-        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar.url)
         embed.timestamp = datetime.datetime.utcnow()
         await ctx.send(embed=embed)
-
-    #--------------#
-    @randomnumber.error
-    async def randomnumber_error(self, ctx: commands.Context, error: commands.CommandError):
-        
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = "Invalid Arguments. `!randomnumber <min> <max>`.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-
-            await ctx.send(embed=embed)
 
     #Coinflip#--------------#
     @commands.command(aliases = ['cointoss'])
@@ -528,22 +352,8 @@ class FunCmds(commands.Cog):
             colour = discord.Colour.from_rgb(0, 155, 180)
         )
 
-        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar.url)
         embed.timestamp = datetime.datetime.utcnow()
-        await ctx.send(embed=embed)
-
-    #--------------#
-    @coinflip.error
-    async def coinflip_error(self, ctx: commands.Context, error: commands.CommandError):
-        
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-
         await ctx.send(embed=embed)
 
     #Say#--------------#
@@ -555,33 +365,12 @@ class FunCmds(commands.Cog):
             colour = discord.Colour.from_rgb(0, 155, 180)
         )
 
-        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar.url)
         
         embed.timestamp = datetime.datetime.utcnow()
         await ctx.send(embed=embed)
         await ctx.message.delete()
 
-    #--------------#
-    @say.error
-    async def say_error(self, ctx, error: commands.CommandError):
-        
-        if isinstance(error, commands.errors.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-
-        if isinstance(error, commands.errors.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = "Invalid Arguments. `!say <text>`",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-
-        await ctx.send(embed=embed)
 
     #sus#--------------#
     @commands.command()
@@ -609,29 +398,7 @@ class FunCmds(commands.Cog):
             )
         
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Sus Machine', icon_url=ctx.author.avatar_url)
-        await ctx.send(embed=embed)
-
-    #--------------#
-    @sus.error
-    async def sus_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
-        
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!sus (user)",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.footer(text=f'Arguments in () are optional.')
-
-        embed.timestamp = datetime.datetime.utcnow()
+        embed.set_author(name=f'Sus Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
     #simp#--------------#
@@ -654,31 +421,8 @@ class FunCmds(commands.Cog):
             )
         
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Simp Machine', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'Simp Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
-
-    #--------------#
-    @simp.error
-    async def simp_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
-            embed.timestamp = datetime.datetime.utcnow()
-            await ctx.send(embed=embed)
-        
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!simp (user)",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.footer(text=f'Arguments in () are optional.')
-            embed.timestamp = datetime.datetime.utcnow()
-            await ctx.send(embed=embed)
 
     #retard#--------------#
     @commands.command()
@@ -700,21 +444,8 @@ class FunCmds(commands.Cog):
             )
         
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Retard Machine', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'Retard Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
-
-    #--------------#
-    @retard.error
-    async def retard_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
-            embed.timestamp = datetime.datetime.utcnow()
-            await ctx.send(embed=embed)
 
     #poggers#--------------#
     @commands.command()
@@ -735,21 +466,8 @@ class FunCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Pog Machine', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'Pog Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
-
-    #--------------#
-    @pog.error
-    async def pog_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
-            embed.timestamp = datetime.datetime.utcnow()
-            await ctx.send(embed=embed)
 
     #poop#--------------#
     @commands.command(aliases=['poop'])
@@ -788,22 +506,9 @@ class FunCmds(commands.Cog):
             )
 
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Poop Machine', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'Poop Machine', icon_url=ctx.author.avatar.url)
         embed.set_footer(text='*Embed Colour decides your shit colour!*')
         await ctx.send(embed=embed)
-
-    #--------------#
-    @poopsize.error
-    async def poopsize_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
-            await ctx.send(embed=embed)
 
     #drip#--------------#
     @commands.command()
@@ -817,7 +522,7 @@ class FunCmds(commands.Cog):
                     description = f'{ctx.author.mention} you are **{dripamt}%** drip!',
                     colour = discord.Colour.from_rgb(0, 155, 180)
                 )
-                embed.set_author(name=f'Drip Machine', icon_url=ctx.author.avatar_url)
+                embed.set_author(name=f'Drip Machine', icon_url=ctx.author.avatar.url)
                 embed.timestamp = datetime.datetime.utcnow()
                 await ctx.send(embed=embed)
         else:
@@ -827,20 +532,7 @@ class FunCmds(commands.Cog):
             )
             
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Drip Machine', icon_url=ctx.author.avatar_url)
-            await ctx.send(embed=embed)
-
-    #--------------#
-    @drip.error
-    async def drip_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
-            embed.timestamp = datetime.datetime.utcnow()
+            embed.set_author(name=f'Drip Machine', icon_url=ctx.author.avatar.url)
             await ctx.send(embed=embed)
     
     #halal#--------------#
@@ -856,7 +548,7 @@ class FunCmds(commands.Cog):
             colour = discord.Colour.from_rgb(0, 155, 180)
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Halal Machine', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'Halal Machine', icon_url=ctx.author.avatar.url)
             await ctx.send(embed=embed)
 
         else:
@@ -866,20 +558,7 @@ class FunCmds(commands.Cog):
             )
 
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Halal Machine', icon_url=ctx.author.avatar_url)
-            await ctx.send(embed=embed)
-
-    #--------------#
-    @halal.error
-    async def halal_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar_url)
+            embed.set_author(name=f'Halal Machine', icon_url=ctx.author.avatar.url)
             await ctx.send(embed=embed)
 
     #Horny#--------------#
@@ -906,30 +585,7 @@ class FunCmds(commands.Cog):
         )
 
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Horny Machine', icon_url=ctx.author.avatar_url)
-        await ctx.send(embed=embed)
-    
-    #--------------#
-    @horny.error
-    async def horny_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-        
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!horny (user)",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.footer(text=f'Arguments in () are optional.')
-
+        embed.set_author(name=f'Horny Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
     #weeb#--------------#
@@ -950,30 +606,49 @@ class FunCmds(commands.Cog):
         )
 
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Weeb Machine', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f'Weeb Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
-    
-    #--------------#
-    @weeb.error
-    async def weeb_error(self, ctx: commands.Context, error: commands.CommandError):
 
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-        
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!weeb (user)",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-            embed.footer(text=f'Arguments in () are optional.')
+    #weeb#--------------#
+    @commands.command(aliases = ['les'])
+    @commands.cooldown(1, 10, BucketType.user)
+    async def lesbian(self, ctx, user: discord.Member=None):
+        percent = random.randint(0, 100)
 
+        if user is None:
+            user = ctx.author
+            
+        else:
+            user = user
+
+        embed = discord.Embed(
+            description = f'{user.mention} is {percent}% a lesbian.',
+            colour = discord.Colour.from_rgb(0, 155, 180)
+        )
+
+        embed.timestamp = datetime.datetime.utcnow()
+        embed.set_author(name=f'Lesbian Machine', icon_url=ctx.author.avatar.url)
+        await ctx.send(embed=embed)
+
+    #weeb#--------------#
+    @commands.command(aliases = ['bisexual'])
+    @commands.cooldown(1, 10, BucketType.user)
+    async def bi(self, ctx, user: discord.Member=None):
+        percent = random.randint(0, 100)
+
+        if user is None:
+            user = ctx.author
+            
+        else:
+            user = user
+
+        embed = discord.Embed(
+            description = f'{user.mention} is {percent}% bi.',
+            colour = discord.Colour.from_rgb(0, 155, 180)
+        )
+
+        embed.timestamp = datetime.datetime.utcnow()
+        embed.set_author(name=f'Bi Machine', icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
     #cookie#-------------------------#
@@ -987,7 +662,7 @@ class FunCmds(commands.Cog):
                 colour = user.colour
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cookie', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'Cookie', icon_url=ctx.author.avatar.url)
             await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
@@ -995,7 +670,7 @@ class FunCmds(commands.Cog):
                 colour = user.colour
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cookie', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=f'Cookie', icon_url=ctx.author.avatar.url)
             await ctx.send(embed=embed)
 
     #shoot#------------------------#
@@ -1037,7 +712,7 @@ class FunCmds(commands.Cog):
             embed2.add_field(name=f"{user.name} Health", value = f":heart: **{userHealth}**", inline=True)
             embed2.add_field(name=f"{user2.name} Health", value = f":heart: **{user2Health}**", inline=True)
             embed2.add_field(name="Last Action", value=f"{user.name} hit {user2.name} for **{dmg1}**{random.choice(hurtmsg)}", inline=False)
-            embed2.set_thumbnail(url=user.avatar_url)
+            embed2.set_thumbnail(url=user.avatar.url)
 
             await msg.edit(embed=embed2)
             await asyncio.sleep(2)
@@ -1052,7 +727,7 @@ class FunCmds(commands.Cog):
             embed3.add_field(name=f"{user.name} Health", value = f":heart: **{userHealth}**", inline=True)
             embed3.add_field(name=f"{user2.name} Health", value = f":heart: **{user2Health}**", inline=True)
             embed3.add_field(name="Last Action", value=f"{user2.name} hit {user.name} for **{dmg2}**{random.choice(hurtmsg)}", inline=False)
-            embed3.set_thumbnail(url=user2.avatar_url)
+            embed3.set_thumbnail(url=user2.avatar.url)
 
             await msg.edit(embed=embed3)
             await asyncio.sleep(2)
@@ -1089,96 +764,196 @@ class FunCmds(commands.Cog):
                 )
                 await ctx.send(embed=embed)
 
-    #hack command#-------------#
     @commands.command()
-    async def hack(self, ctx, user: commands.MemberConverter):
+    @commands.cooldown(1, 10, BucketType.user)
+    async def animal(self, ctx, *, animal):
 
-        embed = discord.Embed(description = f"Attempting to hack **{user.name}**...", colour=discord.Colour.from_rgb(0, 208, 255))
-        msg = await ctx.send(embed=embed)
+        if animal == 'dog':
+            animal = 'Dog'
+        
+        if animal == 'cat':
+            animal = 'Cat'
 
-        if random.randint(0, 999) == 1:
-            embed2 = discord.Embed(
-                description = f"Hacking {user.name} failed. They are using NordVPN.",
-                colour = discord.Colour.from_rgb(0, 208, 255)
+        if animal == 'panda':
+            animal = 'Panda'
+
+        if animal == 'fox':
+            animal = 'Fox'
+
+        if animal == 'bird':
+            animal = 'Bird'
+
+        if animal == 'koala':
+            animal = 'Koala'
+
+        if animal == 'red panda':
+            animal = 'red_panda'
+
+        if animal == 'raccoon':
+            animal = 'Raccoon'
+
+        if animal == 'kangaroo':
+            animal = 'Kangaroo'
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(f"https://some-random-api.ml/animal/{animal}") as r:
+                data = await r.json()
+
+                if animal == "red_panda":
+                    animal = "Red Panda"
+
+                embed = discord.Embed(
+                    title = animal,
+                    description = 'Random Fact: ' + data["fact"],
+                    colour = discord.Colour.from_rgb(0, 208, 255)
+                )
+                embed.set_image(url=data["image"])
+                embed.timestamp = datetime.datetime.utcnow()
+                await ctx.send(embed=embed)
+
+    @animal.error
+    async def animal_error(self, ctx, error):
+
+        if isinstance(commands.MissingRequiredArgument):
+            embed = discord.Embed(
+                description = "Invalid Search Query, please try one of the following: Dog, Cat, Panda, Fox, Red Panda, Koala, Bird, Raccoon, Kangaroo",
+                colour = discord.Colour.from_rgb(255, 75, 75)
             )
-            embed2.add_field(
-                name = "About Our Sponsor",
-                value = "Check out the link in the description to get 20% off for the first two months and thank you to NordVPN for sponsoring this video.",
-                inline=False
+            embed.timestamp = datetime.datetime.utcnow()
+            embed.set_author(name="Search Error", icon_url=ctx.author.avatar.url)
+            await ctx.send(embed=embed)
+
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description = f":stopwatch: Command is on cooldown, please try again in {round(error.retry_after, 1)} seconds.",
+                colour = discord.Colour.from_rgb(255, 75, 75)
             )
-            embed2.add_field(
-                name = "Sponsor Link",
-                value = "[Click Here](https://www.youtube.com/watch?v=ub82Xb1C8os&t=0s)",
-                inline=False
-            )
-            embed2.set_author(name="Sponsored by NordVPN", icon_url=ctx.author.avatar_url)
-            embed2.timestamp = timeNow
-            await msg.edit(embed=embed2)
+            embed.set_author(name="Cooldown", icon_url=ctx.author.avatar.url)
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed, delete_after=5)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def wink(self, ctx, user: discord.Member):
+        embed = discord.Embed(
+            title = f"{ctx.author.name} winked at {user.name}! :wink:",
+            colour = discord.Colour.from_rgb(0, 208, 255)
+        )
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get("https://some-random-api.ml/animu/wink") as r:
+                data = await r.json()
+                embed.set_image(url=data["link"])
+                await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def hug(self, ctx, user: discord.Member):
+        embed = discord.Embed(
+            title = f"{ctx.author.name} hugged {user.name}!",
+            colour = discord.Colour.from_rgb(0, 208, 255)
+        )
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get("https://some-random-api.ml/animu/hug") as r:
+                data = await r.json()
+                embed.set_image(url=data["link"])
+                await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def pat(self, ctx, user: discord.Member):
+        embed = discord.Embed(
+            title = f"{ctx.author.name} pat {user.name}!",
+            colour = discord.Colour.from_rgb(0, 208, 255)
+        )
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get("https://some-random-api.ml/animu/pat") as r:
+                data = await r.json()
+                embed.set_image(url=data["link"])
+                await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def joke(self, ctx):
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get("https://some-random-api.ml/joke") as r:
+                data = await r.json()
+                await ctx.reply(data["joke"])
+
+    @commands.command()
+    @commands.cooldown(1, 10, BucketType.user)
+    async def encode(self, ctx, *, message):
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(f"https://some-random-api.ml/binary?encode={message}") as r:
+                data = await r.json()
+                text = data["binary"]
+                
+                embed = discord.Embed(
+                    description = f":white_check_mark: | Encoded Data: **{text}**",
+                    colour = discord.Colour.from_rgb(0, 208, 255)
+                )
+                embed.set_author(name="Binary Encoder", icon_url=ctx.author.avatar.url)
+                embed.timestamp = datetime.datetime.utcnow()
+                await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    @commands.cooldown(1, 10, BucketType.user)
+    async def decode(self, ctx, *, message):
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(f"https://some-random-api.ml/binary?decode={message}") as r:
+                data = await r.json()
+                text = data["text"]
+                
+                embed = discord.Embed(
+                    description = f":white_check_mark: | Encoded Data: **{text}**",
+                    colour = discord.Colour.from_rgb(0, 208, 255)
+                )
+                embed.set_author(name="Binary Decoder", icon_url=ctx.author.avatar.url)
+                embed.timestamp = datetime.datetime.utcnow()
+                await ctx.send(embed=embed)
+
+    @commands.command(aliases = ['piss'])
+    async def pisson(self, ctx, user: discord.Member=None):
+
+        if user is None:
+            user = ctx.author
+            text = f"{user.mention} has pissed themselves!"
 
         else:
-            # Entering Phase 1/5:
-            phase1 = discord.Embed(
-                description = "Blocked by firewall, attempting to bypass..",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-            phase1.set_author(name="Hacking Tool v4.20", iicon_url=ctx.author.avatar_url)
-            phase1.timestamp = timeNow
-            await msg.edit(embed=phase1)
-            await asyncio.sleep(1.5)
-    
-            phase2 = discord.Embed(
-                description = f"Hacked into **{user.name}**'s google account **{user.name}@retardhotline.net**",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-            phase2.timestamp = timeNow
-            phase2.set_author(name="Hacking Tool v4.20", icon_url=ctx.author.avatar_url)
-            await msg.edit(embed=phase2)
-            await asyncio.sleep(1.5)
+            user = user
+            text = f"{ctx.author.mention} pissed on {user.mention}!"
 
-            phase3 = discord.Embed(
-                description = f"Attempting to steal data...",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-            phase3.timestamp = timeNow
-            phase3.set_author(name="Hacking Tool v4.20", icon_url=ctx.author.avatar_url)
-            await msg.edit(embed=phase3)
-            await asyncio.sleep(1.5)
+        em = discord.Embed(
+            description = text,
+            colour = discord.Colour.from_rgb(0, 208, 255)
+        )
 
-            phase4 = discord.Embed(
-                description = f"Attempting to steal data... [2FA Bypassed]",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-            phase4.timestamp = timeNow
-            phase4.set_author(name="Hacking Tool v4.20", icon_url=ctx.author.avatar_url)
-            await msg.edit(embed=phase4)
-            await asyncio.sleep(1.5)
+        em.set_author(name="Pissing Machine", icon_url=ctx.author.avatar.url)
+        em.timestamp = datetime.datetime.utcnow()
+        await ctx.reply(embed=em)
 
-            phase5 = discord.Embed(
-                description = f"Injecting Virus into users computer.. [{random.randint(20, 50)}% Complete]",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-            phase5.timestamp = timeNow
-            phase5.set_author(name="Hacking Tool v4.20", icon_url=ctx.author.avatar_url)
-            await msg.edit(embed=phase5)
-            await asyncio.sleep(1.5)
+    @commands.command(aliases = ['cum'])
+    async def cumon(self, ctx, user: discord.Member=None):
 
-            phase6 = discord.Embed(
-                description = f"Injecting Virus into users computer.. [{random.randint(51, 80)}% Complete]",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-            phase6.timestamp = timeNow
-            phase6.set_author(name="Hacking Tool v4.20", icon_url=ctx.author.avatar_url)
-            await msg.edit(embed=phase6)
-            await asyncio.sleep(1.5)
+        if user is None:
+            user = ctx.author
+            text = f"{user.mention} tried to cum on their own, fucking weirdo innit."
 
-            phase7 = discord.Embed(
-                description = f"Succesfully hacked **{user.name}**\n\n**Account**: {user.name}@retardhotline.net\n**Password**:`*************`\n**Folders**: `Steven Universe R34`, `Shrek Porn`, `Photos (2004 Highschool)`, `Cosmo Feet Pics`",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-            phase7.timestamp = timeNow
-            phase7.set_author(name="Hacking Tool v4.20", icon_url=ctx.author.avatar_url)
-            await msg.edit(embed=phase7)
-            await asyncio.sleep(1.5)
+        else:
+            user = user
+            text = f"{ctx.author.mention} cummed on {user.mention}!"
+
+        em = discord.Embed(
+            description = text,
+            colour = discord.Colour.from_rgb(0, 208, 255)
+        )
+
+        em.set_author(name="Cum Machine", icon_url=ctx.author.avatar.url)
+        em.timestamp = datetime.datetime.utcnow()
+        await ctx.reply(embed=em)
 
 #---------------------CLIENT---------------------#
 

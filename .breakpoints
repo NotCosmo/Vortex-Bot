@@ -1,3 +1,20 @@
 {
-  "files": {}
+  "files": {
+    "cogs/admin_eco.py": [
+      {
+        "id": "e9e1eaa0-d119-4729-8d11-2933d01e763c",
+        "line": 223,
+        "version": 2973,
+        "index": 8667
+      }
+    ],
+    "cogs/economy.py": [
+      {
+        "id": "71fe6960-7e71-4fff-8da8-58fffffdd1f7",
+        "line": 1,
+        "version": 12348,
+        "index": 0
+      }
+    ]
+  }
 }
