@@ -12,6 +12,13 @@ class Events(commands.Cog):
         self.client = client
 
     @commands.Cog.listener()
+    async def on_message(self, ctx):
+
+        pass
+        #if ctx.mentions:
+        #    return await ctx.channel.send(ctx.mentions)
+    
+    @commands.Cog.listener()
     async def on_member_join(self, user):
 
         # 
@@ -30,6 +37,7 @@ class Events(commands.Cog):
 
         embed.set_author(name="👋 New User", icon_url=user.display_avatar)
         embed.timestamp = datetime.utcnow()
+        await self.client.get_channel(929330258816159815).edit(name=f"👤 Members: {len(self.client.get_guild(581139467381768192).members)}")
         await channel.send(embed=embed)
         await user.add_roles(member)
         await user.add_roles(titles)
@@ -68,7 +76,8 @@ class Events(commands.Cog):
         # Command is on cooldown
         if isinstance(error, commands.CommandOnCooldown):
             embed = discord.Embed(
-                description = f":stopwatch: Command is on cooldown, please try again in {str(timedelta(seconds=round(error.retry_after, 1)))} seconds.",
+                # {str(timedelta(seconds=round(error.retry_after, 1)))}
+                description = f":stopwatch: Command is on cooldown, please try again in {round(error.retry_after, 2)}s",
                 colour = errorColour
             )
             embed.set_author(name="Cooldown", icon_url=ctx.author.avatar.url)

@@ -1,6 +1,7 @@
 # Main Imports
 
 import nextcord as discord
+from nextcord import Interaction, SlashOption
 import datetime
 import asyncio
 import random
@@ -8,32 +9,23 @@ import aiohttp
 
 # Side Imports
 
-from main import timeNow
 from nextcord.ext import commands
+from nextcord import Spotify
 from nextcord.ext.commands import BucketType
 
 #---------------------COG SETUP---------------------#
 
-class FunCmds(commands.Cog):
+class General(commands.Cog,description="General bot commands, anything from fun commands to misc commands."):
 
     def __init__(self, client):
         self.client = client
 
-    @commands.command()
-    async def elite(self, ctx):
-
-        em = discord.Embed(
-            title = "Elite YouTube",
-            description = "Very cool youtuber that does videos and shit you should [subscribe](https://m.youtube.com/channel/UC0eLyb_Z4FKrDN7JS_duvWQ).",
-            colour = discord.Colour.from_rgb(71, 160, 196)
-        )
-        em.timestamp = datetime.datetime.utcnow()
-        await ctx.reply(embed=em, mention_author=False)
-
-    #8ball#--------------#
-    @commands.command(help = "- Ask the Magic 8ball a question.\n\n__**Usage**__\n- `!8ball <question>`", aliases = ['8ball'])
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def _8ball(self, ctx, *, question):
+    @discord.slash_command(name="8ball",description="8ball command!",guild_ids=[581139467381768192])
+    async def _8ball(
+        self,
+        interaction: Interaction,
+        question: str = SlashOption(description="Question to ask", required=True)
+    ):
         responses = [
 			'It is certain.', 
 			'It is decidedly so.', 
@@ -57,17 +49,19 @@ class FunCmds(commands.Cog):
 			'Very doubtful.']
         
         embed = discord.Embed(
-            description = f'**{question}**: {random.choice(responses)}',
+            description = f'`{question}`: {random.choice(responses)}',
             colour = discord.Colour.from_rgb(0, 155, 180)
         )
-        embed.set_author(name='🎱  8Ball Machine', icon_url=ctx.author.avatar.url)
+        embed.set_author(name='🎱  8Ball Machine', icon_url=interaction.user.display_avatar)
         embed.timestamp = datetime.datetime.utcnow()
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    #pp#--------------#
-    @commands.command()
-    @commands.cooldown(1, 10, BucketType.user)
-    async def pp(self, ctx, user: discord.Member=None):
+    @discord.slash_command(name="pp",description="pp command",guild_ids=[581139467381768192])
+    async def _pp(
+        self,
+        interaction: Interaction,
+        user: discord.Member = SlashOption(description="User", required=False)
+    ):
         sizes = [
             '8D',
             '8=D',
@@ -101,45 +95,44 @@ class FunCmds(commands.Cog):
         if x == 999:
             text = 'so small that you need to have a microscope in the Quantum Realm to see it.'
             
-        if user is None:
+        if user:
             embed = discord.Embed(
-                description = f"{ctx.author.mention}'s penis size is {text}",
+                description = f"Your penis size is {text}",
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
-
-            embed.set_author(name=f'Penis Machine', icon_url=ctx.author.avatar.url)
+            embed.set_author(name=f'Penis Rate', icon_url=interaction.user.display_avatar)
             embed.timestamp = datetime.datetime.utcnow()
-            await ctx.send(embed=embed)
-
+            await interaction.response.send_message(embed=embed)
         else:
             embed = discord.Embed(
-                description = f"{user.mention}'s penis size is {text}",
+                description = f"{interaction.user.mention}'s penis size is {text}",
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
-
-            embed.set_author(name=f'Penis Machine', icon_url=ctx.author.avatar.url)
             embed.timestamp = datetime.datetime.utcnow()
-            await ctx.send(embed=embed)
-    
+            embed.set_author(name=f'Penis Machine', icon_url=interaction.user.display_avatar)
+            await interaction.response.send_message(embed=embed)
+        
     #luck#--------------#
-    @commands.command()
-    @commands.cooldown(1, 10, BucketType.user)
-    async def luck(self, ctx, *, thing):
+    @discord.slash_command(name="chance",description="luck command",guild_ids=[581139467381768192])
+    async def luck(
+        self,
+        i: Interaction,
+        arg: str = SlashOption(description="Thing to happen", required=True)
+    ):
         x = random.randint(0, 100)
-        if thing == 'baco falling down the stairs':
+        if arg == 'baco falling down the stairs':
             x = 100
 
         embed = discord.Embed(
-            description = f"The chance of **{thing}** is **{x}%**!",
-            colour = discord.Colour.from_rgb(0, 155, 180)
+            description = f"The chance of **{arg}** is **{x}%**!",
+            colour = discord.Colour.from_rgb(12, 158, 90)
         )
-        embed.set_author(name=f'Luck Machine', icon_url=ctx.author.avatar.url)
+        embed.set_author(name=f'Chance Machine', icon_url=i.user.display_avatar)
         embed.timestamp = datetime.datetime.utcnow()
-        await ctx.send(embed=embed)
+        await i.response.send_message(embed=embed)
 
     #rps#--------------#
     @commands.command()
-    @commands.cooldown(1, 10, BucketType.user)
     async def rps(self, ctx, *, userchoice):
         
         winner = ''
@@ -208,26 +201,28 @@ class FunCmds(commands.Cog):
 
 
     #Gay#--------------#
-    @commands.command()
-    @commands.cooldown(1, 10, BucketType.user)
-    async def gay(self, ctx, user: discord.Member=None):
+    @discord.slash_command(name="howgay",description="gay rate",guild_ids=[581139467381768192])
+    async def gay(
+        self,
+        i: Interaction,
+        user: discord.Member = SlashOption(description="User", required=False)
+    ):
         percent = random.randint(0, 100)
 
-        if user is None:
+        if user:
             embed = discord.Embed(
-                description = f'{ctx.author.mention} is {percent}% gay.',
+                description = f'{i.user.mention} is {percent}% gay.',
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
-            
         else:
             embed = discord.Embed(
-                description = f'{user.mention} is {percent}% gay.',
+                description = f'You are {percent}% gay.',
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
 
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Gay Machine', icon_url=ctx.author.avatar.url)
-        await ctx.send(embed=embed)
+        embed.set_author(name=f'How Gay', icon_url=i.user.display_avatar)
+        await i.response.send_message(embed=embed)
     
     #Racist#--------------#
     @commands.command()
@@ -562,31 +557,45 @@ class FunCmds(commands.Cog):
             await ctx.send(embed=embed)
 
     #Horny#--------------#
-    @commands.command()
-    @commands.cooldown(1, 10, BucketType.user)
-    async def horny(self, ctx, user: discord.Member=None):
+    @discord.slash_command(name="horny",description="How horny are you?",guild_ids=[581139467381768192])
+    async def horny(
+        self,
+        i: Interaction,
+        user: discord.Member = SlashOption(description="User", required=False)
+    ):
         percent = random.randint(0, 100)
 
-        if user is None:
-            user = ctx.author
-            
-        else:
-            user = user
-
-        if ctx.author.id == 843131902290427974 or user.id == 843131902290427974:
-            percent = 100
+        if i.user.id == 843131902290427974:
+            percent = "4.20e69"
         
-        elif ctx.author.id == 656277190916440065 or user.id == 656277190916440065:
+        elif i.user.id == 656277190916440065:
             percent = -69
 
-        embed = discord.Embed(
-            description = f'{user.mention} is {percent}% horny.',
-            colour = discord.Colour.from_rgb(0, 155, 180)
-        )
-
-        embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'Horny Machine', icon_url=ctx.author.avatar.url)
-        await ctx.send(embed=embed)
+        if user:
+            if user.id == 843131902290427974:
+                percent = "4.20e69"
+        
+            elif user.id == 656277190916440065:
+                percent = -69
+                
+            embed = discord.Embed(
+                description = f'{user.mention} is {percent}% horny.',
+                colour = discord.Colour.from_rgb(0, 155, 180)
+            )
+    
+            embed.timestamp = datetime.datetime.utcnow()
+            embed.set_author(name=f'How Horny', icon_url=i.user.display_avatar)
+            return await i.response.send_message(embed=embed)
+        
+        else:
+            embed = discord.Embed(
+                description = f'You are {percent}% horny.',
+                colour = discord.Colour.from_rgb(0, 155, 180)
+            )
+    
+            embed.timestamp = datetime.datetime.utcnow()
+            embed.set_author(name=f'How Horny', icon_url=i.user.display_avatar)
+            return await i.response.send_message(embed=embed)
 
     #weeb#--------------#
     @commands.command()
@@ -955,7 +964,280 @@ class FunCmds(commands.Cog):
         em.timestamp = datetime.datetime.utcnow()
         await ctx.reply(embed=em)
 
+    @commands.command()
+    async def astronomy(self, ctx):
+        async with ctx.channel.typing():
+            async with aiohttp.ClientSession() as cs:
+                async with cs.get("https://www.reddit.com/r/Astronomy.json") as r:
+                    res = await r.json()
+            url = res['data']['children'][random.randint(0,50)]['data']['url']
+
+        em = discord.Embed(description='Random picture from r/astronomy!',colour=discord.Colour.from_rgb(127, 0, 255))
+        em.timestamp = datetime.datetime.utcnow()
+        em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+        em.set_image(url=url)
+        await ctx.reply(embed=em, mention_author=False)
+
+    @commands.command(aliases = ['source', 'git', 'gh'])
+    @commands.cooldown(1, 10, BucketType.user)
+    async def github(self, ctx):
+        await ctx.send(":white_check_mark: ┃ You can find my source code on Github through this link: https://github.com/NotCosmo/Vortex")
+
+    @commands.command(aliases = ['si'])
+    @commands.cooldown(1, 10, BucketType.user)
+    async def serverinfo(self, ctx):
+        name = str(ctx.guild.name)
+        description = str(ctx.guild.description)
+
+        owner = 'cosmo.#5056'
+        id = str(ctx.guild.id)
+        region = str(ctx.guild.region)
+        memberCount = str(ctx.guild.member_count)
+
+        icon = ctx.guild.icon.url
+        
+        embed = discord.Embed(
+            title=name + " Server Information",
+            description=description,
+            colour = discord.Colour.random()
+        )
+        embed.set_thumbnail(url=icon)
+        embed.add_field(name="Owner", value=owner, inline=True)
+        embed.add_field(name="Server ID", value=id, inline=True)
+        embed.add_field(name="Region", value=region, inline=True)
+        embed.add_field(name="Member Count", value=memberCount, inline=True)
+
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 3, BucketType.user)
+    async def qotd(self, ctx, toggle="on"):
+
+        role = discord.utils.find(lambda r: r.name == 'QOTD', ctx.message.guild.roles)
+
+        if toggle == "on" and role not in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Toggled On!",
+                description = ":thumbsup: Successfully toggled QOTD Pings `on`.",
+                colour = discord.Colour.from_rgb(95, 255, 95)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+            await ctx.author.add_roles(role)
+
+        elif toggle == "on" and role in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Role Error",
+                description = "You already have QOTD Pings enabled!",
+                colour = discord.Colour.from_rgb(255, 75, 55)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+
+        if toggle == "off" and role not in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Command Error",
+                description = "You do not have QOTD Pings enabled!",
+                colour = discord.Colour.from_rgb(255, 75, 75)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+
+        elif toggle == "off" and role in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Toggled Off!",
+                description = ":thumbsup: Successfully toggled QOTD Pings `off`.",
+                colour = discord.Colour.from_rgb(95, 255, 95)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+            await ctx.author.remove_roles(role)
+
+    @commands.command()
+    @commands.cooldown(1, 3, BucketType.user)
+    async def youtube(self, ctx, toggle="on"):
+
+        role = discord.utils.find(lambda r: r.name == 'YouTube', ctx.message.guild.roles)
+
+        if toggle == "on" and role not in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Toggled On!",
+                description = ":thumbsup: Successfully toggled YT Pings `on`.",
+                colour = discord.Colour.from_rgb(95, 255, 95)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+            await ctx.author.add_roles(role)
+
+        elif toggle == "on" and role in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Role Error",
+                description = "You already have YT Pings enabled!",
+                colour = discord.Colour.from_rgb(255, 75, 55)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+
+        if toggle == "off" and role not in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Command Error",
+                description = "You do not have YT Pings enabled!",
+                colour = discord.Colour.from_rgb(255, 75, 75)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+
+        elif toggle == "off" and role in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Toggled Off!",
+                description = ":thumbsup: Successfully toggled YT Pings `off`.",
+                colour = discord.Colour.from_rgb(95, 255, 95)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+            await ctx.author.remove_roles(role)
+
+    @commands.command()
+    @commands.cooldown(1, 3, BucketType.user)
+    async def fotd(self, ctx, toggle="on"):
+
+        role = discord.utils.find(lambda r: r.name == 'FOTD', ctx.message.guild.roles)
+
+        if toggle == "on" and role not in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Toggled On!",
+                description = ":thumbsup: Successfully toggled FOTD Pings `on`.",
+                colour = discord.Colour.from_rgb(95, 255, 95)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+            await ctx.author.add_roles(role)
+
+        elif toggle == "on" and role in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Role Error",
+                description = "You already have FOTD Pings enabled!",
+                colour = discord.Colour.from_rgb(255, 75, 55)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+
+        if toggle == "off" and role not in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Command Error",
+                description = "You do not have FOTD Pings enabled!",
+                colour = discord.Colour.from_rgb(255, 75, 75)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+
+        elif toggle == "off" and role in ctx.author.roles:
+            
+            embed = discord.Embed(
+                title = "Toggled Off!",
+                description = ":thumbsup: Successfully toggled FOTD Pings `off`.",
+                colour = discord.Colour.from_rgb(95, 255, 95)
+            )
+            embed.timestamp = datetime.datetime.utcnow()
+            await ctx.send(embed=embed)
+            await ctx.author.remove_roles(role)
+
+    @commands.command(aliases = ["avatar"])
+    @commands.cooldown(1, 3, BucketType.user)
+    async def av(self, ctx, user: discord.Member=None):
+        
+        embed = discord.Embed(
+            colour = ctx.author.colour
+        )
+
+        if user is None:
+            embed.set_image(url=ctx.author.avatar.url)
+
+        else:
+            embed.set_image(url=user.avatar.url)
+        
+        await ctx.send(embed=embed)
+
+    @commands.command(aliases = ["whois"])
+    async def userinfo(self, ctx, *, user: discord.Member=None): # b'\xfc'
+        if user is None:
+            user = ctx.author      
+        date_format = "%a, %d %b %Y %I:%M %p"
+
+        embed = discord.Embed(
+            colour=user.colour, 
+            description=user.mention
+        )
+        embed.set_author(name=str(user), icon_url=user.display_avatar)
+        embed.set_thumbnail(url=user.display_avatar)
+
+        if user.activity:
+            activity = user.activity.name
+        else:
+            activity = "None"
+
+        embed.add_field(name="Joined Server", value=f'`{user.joined_at.strftime(date_format)}`')
+        embed.add_field(name="Account Creation", value=f'`{user.created_at.strftime(date_format)}`')
+        embed.add_field(name="User Status", value=f"{activity}", inline=False)
+
+        if len(user.roles) > 1:
+            role_string = ' '.join([r.mention for r in user.roles][1:])
+            embed.add_field(name="Roles [{}]\n \n".format(len(user.roles)-1), value=role_string, inline=False)
+
+        embed.set_footer(text='ID: ' + str(user.id))
+        embed.timestamp = datetime.datetime.utcnow()
+        return await ctx.send(embed=embed)
+
+    @commands.command()
+    async def spotify(self, ctx, user: discord.Member=None):
+
+        if user is None:
+            user = ctx.author
+
+        else:
+            user = user
+
+        for activity in user.activities:
+            if isinstance(activity, Spotify):
+
+                em = discord.Embed(
+                    title = f"Listening to {activity.title}..",
+                    description = f"Track ID: {activity.track_id}",
+                    colour = discord.Colour.from_rgb(30, 215, 96)
+                )
+
+                _artists = activity.artists
+                artists = ""
+                for i in _artists:
+                    artists += i + ", "
+
+                em.set_thumbnail(url=activity.album_cover_url)
+                em.add_field(name="Artists", value=artists, inline=True)
+                em.add_field(name="Album", value=activity.album, inline=True)
+                em.add_field(name="Track Url", value=activity.track_url, inline=False)
+                em.set_footer(text=f"{user.name}'s Spotify", icon_url=user.avatar.url)
+                em.timestamp = datetime.datetime.utcnow()
+
+                await ctx.send(embed=em)
+
+    @commands.command(aliases=['timenow', 'tn'])
+    async def time(self, ctx):
+
+        em = discord.Embed(colour = discord.Colour.from_rgb(0, 177, 255))
+        em.description = f"```py\n{datetime.datetime.now().timestamp()}\n```"
+        await ctx.reply(embed=em)
 #---------------------CLIENT---------------------#
 
 def setup(client):
-    client.add_cog(FunCmds(client))
+    client.add_cog(General(client))

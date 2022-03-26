@@ -12,7 +12,8 @@ from nextcord.ext import commands
 from nextcord.ext.commands import BucketType
 from nextcord.utils import find
 from pymongo import MongoClient
-from loot import *
+from .utils.loot import *
+from .utils.weapons import WeaponInstance
 
 quest_instance = False
 
@@ -23,11 +24,12 @@ quest_instance = False
 cluster = MongoClient("mongodb+srv://Cosmo:1H1uqPGjo5CjtHQe@eco.5afje.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 database = cluster["Discord"]
 eco = database["Economy"]
+inventory = database["Inventories"]
 
 #
 ''' Boss Class '''
 #
-
+            
 class NewBoss():
     
     def __init__(self, name, desc, health, mindamage, maxdamage, loot):
@@ -51,7 +53,7 @@ class Player():
 
 # ------------------------------- #
 ''' Setup '''
-# ------------------------------- #
+# ------------------------------- #!
 
 class Boss(commands.Cog):
 
@@ -60,313 +62,118 @@ class Boss(commands.Cog):
 
     MinionLoot = []
 
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def dbt(self, ctx):
+        
+        inventory.update_one({"_id":ctx.author.id}, {"$set": {"selected_weapon":"None"}})
+        await ctx.send("Done!")
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def weapon(self, ctx, *, display_name: str):
+
+        weapon = WeaponInstance(display_name)
+        await ctx.send(f"{weapon.name}\n\n__**Min Dmg**__: {weapon.min_dmg}\n__**Max Dmg**__: {weapon.max_dmg}")
+    
+    @commands.command()
+    async def boss_test(self, ctx):
+
+        player = Player(name=ctx.author.name,health=500,originalhealth=500,mindamage=100,maxdamage=300,agility=15)
+        boss = NewBoss(name="Starter Boss",desc=None,health=1000,mindamage=50,maxdamage=80,loot=[])
+
+        em = discord.Embed(
+            title=boss.name,
+            colour=discord.Colour.from_rgb(0, 208, 255)
+        )
+        em.add_field(name="Boss Health", value = f":heart: {boss.health:,}", inline=True)
+        em.add_field(name="Player Health", value = f":heart: {player.health:,}", inline=True)
+        em.add_field(name="Last Action", value="`Boss initiated.`", inline=False)
+        em.add_field(name="Difficulty", value=":star:", inline=False)
+        em.timestamp = datetime.utcnow()
+
+        actions = Button(player_health=player.health,player_agility=player.agility,player_min=player.mindamage,player_max=player.maxdamage,boss_min=boss.mindamage,boss_max=boss.maxdamage,boss_health=boss.health)
+        msg = await ctx.send(embed=em, view=actions)
+
+        while (boss.health > 0) and (player.health) > 0:
+
+            await actions.wait()
+
+            if actions.player_dead == False:
+                pass
+            else:
+                return
+
+    @commands.command(aliases=['inv'])
+    async def inventory(self, ctx):
+
+        try:
+            data = inventory.find_one({"_id":ctx.author.id})
+            em = discord.Embed(description='',colour=discord.Colour.from_rgb(0, 208, 255))
+
+            for result in data:
+
+                if str(result) == "_id":
+                    continue
+                    
+                item = result.title().replace("_", "")
+                em.description += f"{item} - `{data[result]}`x"
+
+                em.description += "\n"
+                em.description += "__**Weapons**__"
+                em.description += " \n".join(data['weapons_inventory'])
+            return await ctx.send(embed=em)
+            
+        except:
+            return inventory.insert_one({
+                "_id":ctx.author.id,
+                "selected_weapon":"None",
+                "weapons_inventory":[],
+                
+            })
+
+    @commands.command()
+    async def bossinfo(self, ctx, *, boss=None):
+
+        if boss in ["serpent", "Serpent"]:
+            em = discord.Embed(title=":fire: Blazing Serpent", description="> An ancient beast found within the volcanic region.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.add_field(name="Loot",value="> [Common] Blazing Scales - 50%\n> [Rare] Flaming Fang - 35%\n> [Epic] Unrefined Venom - 10%\n> :star: [Legendary] Scorching Heart - 5%")
+            em.timestamp = datetime.utcnow()
+            await ctx.send(embed=em)
+
     @commands.group(invoke_without_command=True)
     @commands.cooldown(1, 1, BucketType.user)
     async def boss(self, ctx, *, bossName=None):
 
-        await ctx.send("What boss are you trying to fight?")
+        em = discord.Embed(colour=discord.Colour.from_rgb(0, 208, 255))
 
-    @boss.command(aliases = ["Minion"])
-    @commands.cooldown(1, 1, BucketType.user)
-    async def minion(self, ctx):
-
-        # Weapon drop needs to be made
-        weaponDrop = find(lambda r: r.name == "Minion Drop Here", ctx.message.guild.roles)
-        logs = self.client.get_channel(873941431570546770)
-
-        atkspeed = 1.5
-        boss = NewBoss(
-            name="Raven's Minion",
-            desc="Temp Desc",
-            health=5000,
-            mindamage=80,
-            maxdamage=120,
-            loot=[],
-        )
-        # name, health, originalhealth, mindamage, maxdamage, agility
-        player = Player(
-            name=ctx.author.name,
-            health=2500,
-            originalhealth=2500,
-            mindamage=150,
-            maxdamage=300,
-            agility=0,
-        )
-
-        em = discord.Embed(
-            title=boss.name,
-            colour=discord.Colour.from_rgb(0, 208, 255)
-        )
-        em.add_field(name="Boss Health", value = f":heart: {boss.health:,}", inline=True)
-        em.add_field(name="Player Health", value = f":heart: {player.health:,}", inline=True)
-        em.add_field(name="Last Action", value="`Boss initiated.`", inline=False)
-        em.add_field(name="Difficulty", value=":star:", inline=False)
+        em.add_field(name="Minion",value="> Tutorial boss in order to get the first starter weapon.",inline=False)
+        em.add_field(name="Raven's Follower",value="> Second boss, unlocks amulets and a new weapon.\n> `>bossinfo Follower` for more info.",inline=False)
+        em.add_field(name="The Gryphon",value="> Higher level boss, drops are used in crafting a new powerful weapon.\n> `>bossinfo Gryphon` for more info.",inline=False)
+        em.add_field(name="Ancient Wizard",value="> An ancient wizard with the power to travel between dimensions, used to craft the dimensional amulet.\n> `>bossinfo Wizard` for more info.",inline=False)
+        em.add_field(name="Blazing Serpent",value="> An ancient beast found within the volcanic region.\n> `>bossinfo Serpent` for more info.",inline=False)
         em.timestamp = datetime.utcnow()
+        em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+        await ctx.send(embed=em)
 
-        msg = await ctx.send(embed=em)
-
-        '''
-        Potion Work 
-        '''
-
-        # Boss loop
-        while (boss.health > 0) and (player.health) > 0:
-
-            await asyncio.sleep(atkspeed)
-
-            player_dps = random.randint(player.mindamage, player.maxdamage)
-            boss.health -= player_dps
-            em2 = discord.Embed(
-                title=boss.name,
-                colour=discord.Colour.from_rgb(0, 208, 255)
-            )
-            em2.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
-            em2.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
-            em2.add_field(name="Last Action",value=f"> {ctx.author.name} dealt :crossed_swords: {player_dps:,}", inline=False)
-            em2.timestamp = datetime.utcnow()
-            await msg.edit(embed=em2)
-
-            await asyncio.sleep(atkspeed)
-
-            boss_dps = random.randint(boss.mindamage, boss.maxdamage)
-            player.health -= boss_dps
-            em3 = discord.Embed(
-                title=boss.name,
-                colour=discord.Colour.from_rgb(0, 208, 255)
-            )
-            em3.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
-            em3.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
-            em3.add_field(name="Last Action",value=f"> {boss.name} dealt :crossed_swords: {boss_dps:,}", inline=False)
-            em3.timestamp = datetime.utcnow()
-            await msg.edit(embed=em3)
-
-            # Boss has died
-            if boss.health <= 0:
-
-                boss.health = 0
-                # Check if player is also dead
-                if player.health <= 0:
-                    #if boss.health <= 0:
-                    #    boss.health = 0
-                    player.health = 0
-                    em = discord.Embed(title="Boss has defeated you.",description="You were weakened and had to flee the boss fight.",colour=discord.Colour.from_rgb(255, 95, 95))
-                    em.timestamp = datetime.utcnow()
-                    return await ctx.send(ctx.author.mention, embed=em)
-                    # await ctx.author.remove_roles(keyreq)
-
-                # Boss defeated
-                else:
-
-                    Economy = eco.find_one({"memberid":ctx.author.id})
-                    quest = Economy["currentQuest"]
-
-                    if quest == "Merlin1":
-                        eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Merlin2"}})
-
-                        em = discord.Embed(title="Quest Completed!",description="Successfully completed Merlin's quest. Head back to >quest Merlin to get your next quest.",colour=discord.Colour.from_rgb(95, 255, 95))
-                        em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
-                        em.timestamp = datetime.utcnow()
-                        await ctx.send(embed=em)
-
-                    # LOOT
-                    em = discord.Embed(title="Boss has fled.",description="You forced the boss to flee.",colour=discord.Colour.from_rgb(95, 255, 95))
-                    em.add_field(name="Loot", value="> Minion's Drop (100%)", inline=False)
-                    em.timestamp = datetime.utcnow()
-                    return await ctx.send(ctx.author.mention, embed=em)
-                    # await ctx.author.remove_roles(keyreq)
-
-            elif player.health <= 0:
-                player.health = 0
-                em = discord.Embed(title="You fled.",description="> You were overpowered and forced to flee, the boss escaped.", colour=discord.Colour.from_rgb(255, 95, 95))
-                em.timestamp = datetime.utcnow()
-                return await ctx.send(embed=em)
-                # await ctx.author.remove_roles(keyreq)
-
-    @boss.command(aliases = ["Follower"])
+    @boss.command(aliases = ["Serpent"])
     @commands.cooldown(1, 1, BucketType.user)
-    async def follower(self, ctx):
+    async def serpent(self, ctx):
 
         # Weapon drop needs to be made
-        cursed_staff = find(lambda r: r.name == "✧ Cursed Staff", ctx.message.guild.roles)
-
-        weapon_drop = find(lambda r: r.name == "✪ Raven's Dagger", ctx.message.guild.roles)
-        amulet_drop = find(lambda r: r.name == "✪ Darkness Amulet", ctx.message.guild.roles)
-        logs = self.client.get_channel(873941431570546770)
-
-        atkspeed = 1.5
-        boss = NewBoss(
-            name="Raven's Follower",
-            desc="Temp Desc",
-            health=7500,
-            mindamage=200,
-            maxdamage=250,
-            loot=follower_loot,
-        )
-        # name, health, originalhealth, mindamage, maxdamage, agility
-        player = Player(
-            name=ctx.author.name,
-            health=2500,
-            originalhealth=2500,
-            mindamage=150,
-            maxdamage=300,
-            agility=0,
-        )
-
-        if cursed_staff in ctx.author.roles:
-            player.health += 500
-            player.originalhealth += 500
-            player.mindamage += 350
-            player.maxdamage += 350
-
-        em = discord.Embed(
-            title=boss.name,
-            colour=discord.Colour.from_rgb(0, 208, 255)
-        )
-        em.add_field(name="Boss Health", value = f":heart: {boss.health:,}", inline=True)
-        em.add_field(name="Player Health", value = f":heart: {player.health:,}", inline=True)
-        em.add_field(name="Last Action", value="`Boss initiated.`", inline=False)
-        em.add_field(name="Difficulty", value=":star:", inline=False)
-        em.timestamp = datetime.utcnow()
-
-        msg = await ctx.send(embed=em)
-
-        '''
-        Potion Work 
-        '''
-
-        # Boss loop
-        while (boss.health > 0) and (player.health) > 0:
-
-            await asyncio.sleep(atkspeed)
-
-            player_dps = random.randint(player.mindamage, player.maxdamage)
-            if player.health <= 0:
-                player.health = 0
-                player_dps = 0
-            boss.health -= player_dps
-            em2 = discord.Embed(
-                title=boss.name,
-                colour=discord.Colour.from_rgb(0, 208, 255)
-            )
-            em2.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
-            em2.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
-            em2.add_field(name="Last Action",value=f"> {ctx.author.name} dealt :crossed_swords: {player_dps:,}", inline=False)
-            em2.timestamp = datetime.utcnow()
-            await msg.edit(embed=em2)
-
-            await asyncio.sleep(atkspeed)
-
-            boss_dps = random.randint(boss.mindamage, boss.maxdamage)
-            if boss.health <= 0:
-                boss.health = 0
-                boss_dps = 0
-            player.health -= boss_dps
-            em3 = discord.Embed(
-                title=boss.name,
-                colour=discord.Colour.from_rgb(0, 208, 255)
-            )
-            em3.add_field(name="Boss HP",value=f":heart: {boss.health:,}",inline=True)
-            em3.add_field(name="Player HP",value=f":heart: {player.health:,}",inline=True)
-            em3.add_field(name="Last Action",value=f"> {boss.name} dealt :crossed_swords: {boss_dps:,}", inline=False)
-            em3.timestamp = datetime.utcnow()
-            await msg.edit(embed=em3)
-
-            # Boss has died
-            if boss.health <= 0:
-
-                boss.health = 0
-                # Check if player is also dead
-                if player.health <= 0:
-                    #if boss.health <= 0:
-                    #    boss.health = 0
-                    player.health = 0
-                    em = discord.Embed(title="Boss has defeated you.",description="You were weakened and had to flee the boss fight.",colour=discord.Colour.from_rgb(255, 95, 95))
-                    em.timestamp = datetime.utcnow()
-                    return await ctx.send(ctx.author.mention, embed=em)
-                    # await ctx.author.remove_roles(keyreq)
-
-                # Boss defeated
-                else:
-
-                    Economy = eco.find_one({"memberid":ctx.author.id})
-                    quest = Economy["currentQuest"]
-
-                    # Defeat Boss 10 times
-                    if quest == "Merlin3":
-                        
-                        Economy = eco.find_one({"memberid":ctx.author.id})
-                        boss_kills = Economy["totalBossKills"]
-                        quest_objective = Economy["questObjectiveCounter"]
-
-                        eco.update_one({"memberid":ctx.author.id},{"$set":{"totalBossKills":boss_kills+1}})
-                        eco.update_one({"memberid":ctx.author.id},{"$set":{"questObjectiveCounter":quest_objective+1}})
-                        quest_instance = True
-
-                        quest_objective_updated = Economy["questObjectiveCounter"]
-                        if quest_objective_updated >= 10:
-
-
-                        #eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Merlin2"}})
-
-                            em = discord.Embed(title="Quest Completed!",description="Successfully completed Merlin's quest. Head back to >quest Merlin to get your next quest.",colour=discord.Colour.from_rgb(95, 255, 95))
-                            em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
-                            em.timestamp = datetime.utcnow()
-                            await ctx.send(embed=em)
-                            eco.update_one({"memberid":ctx.author.id},{"$set":{"questObjectiveCounter":0}})
-                            eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Merlin4"}})
-
-                    # LOOT
-                    em = discord.Embed(title="Boss has fled.",description="You forced the boss to flee.",colour=discord.Colour.from_rgb(95, 255, 95))
-                    
-                    l1 = random.choice(boss.loot)
-                    l2 = random.choice(boss.loot)
-                    l3 = random.choice(boss.loot)
-
-                    if l1 == "Darkness Amulet" or l2 == "Darkness Amulet" or l3 == "Darkness Amulet":
-                        await ctx.author.add_roles(amulet_drop)
-
-                    if l1 == "Raven's Dagger" or l2 == "Raven's Dagger" or l3 == "Raven's Dagger":
-                        await ctx.author.add_roles(weapon_drop)
-                    
-                    em.add_field(name="Loot", value=f"> {l1}\n> {l2}\n> {l3}", inline=False)
-                    em.timestamp = datetime.utcnow()
-
-                    if quest_instance == False:
-                        Economy = eco.find_one({"memberid":ctx.author.id})
-                        boss_kills = Economy["totalBossKills"]
-                        eco.update_one({"memberid":ctx.author.id},{"$set":{"totalBossKills":boss_kills+1}})
-
-                    return await ctx.send(ctx.author.mention, embed=em)
-                    # await ctx.author.remove_roles(keyreq)
-
-            elif player.health <= 0:
-                player.health = 0
-                em = discord.Embed(title="You fled.",description="> You were overpowered and forced to flee, the boss escaped.", colour=discord.Colour.from_rgb(255, 95, 95))
-                em.timestamp = datetime.utcnow()
-                return await ctx.send(embed=em)
-                # await ctx.author.remove_roles(keyreq)
-
-    @boss.command(aliases = ["Gryphon"])
-    @commands.cooldown(1, 1, BucketType.user)
-    async def gryphon(self, ctx):
-
-        # Weapon drop needs to be made
-        raven_dagger = find(lambda r: r.name == "✪ Raven's Dagger", ctx.message.guild.roles)
-
-        feather = find(lambda r: r.name == "🕊️ Gryphon's Feather", ctx.message.guild.roles)
-        claw = find(lambda r: r.name == "🐉 Gryphon's Claw", ctx.message.guild.roles)
-        heart = find(lambda r: r.name == "❤️ Gryphon's Heart", ctx.message.guild.roles)
         azure_splitter = find(lambda r: r.name == "⚜️ Azure Splitter", ctx.message.guild.roles)
-        logs = self.client.get_channel(873941431570546770)
+        legendary_count = 0
+        mythic_count = 0
 
         atkspeed = 1.5
         boss = NewBoss(
-            name="Gryphon",
+            name=":fire: Blazing Serpent",
             desc="Temp Desc",
-            health=10000,
-            mindamage=300,
-            maxdamage=475,
-            loot=gryphon_loot,
+            health=18750,
+            mindamage=650,
+            maxdamage=775,
+            loot=blazing_serpent_loot,
         )
         # name, health, originalhealth, mindamage, maxdamage, agility
         player = Player(
@@ -378,17 +185,22 @@ class Boss(commands.Cog):
             agility=0,
         )
 
-        if raven_dagger in ctx.author.roles:
-            player.health += 2000
-            player.originalhealth += 2000
-            player.mindamage += 625
-            player.maxdamage += 625
+        # Reforged Splitter boost
+        if find(lambda r: r.name == "⭐ Azure Splitter", ctx.message.guild.roles) in ctx.author.roles:
+            player.health += 3000
+            player.originalhealth += 3000
+            player.mindamage += (player.mindamage + (player.mindamage * (10/100))) + 1250
+            player.maxdamage += (player.maxdamage + (player.maxdamage * (10/100))) + 1250
+
+            player.mindamage = int(player.mindamage + (player.mindamage * 15/100))
+            player.maxdamage = int(player.maxdamage + (player.maxdamage * 15/100))
+            player.health = int(player.health + (player.health * 15/100))
 
         elif azure_splitter in ctx.author.roles:
-            player.health += 2500
-            player.originalhealth += 2500
-            player.mindamage += (player.mindamage + (player.mindamage * (10/100))) + 750
-            player.maxdamage += (player.maxdamage + (player.maxdamage * (10/100))) + 750
+            player.health += 3000
+            player.originalhealth += 3000
+            player.mindamage += (player.mindamage + (player.mindamage * (10/100))) + 1250
+            player.maxdamage += (player.maxdamage + (player.maxdamage * (10/100))) + 1250
 
         em = discord.Embed(
             title=boss.name,
@@ -406,7 +218,9 @@ class Boss(commands.Cog):
         Potion Work 
         '''
 
+
         # Boss loop
+
         while (boss.health > 0) and (player.health) > 0:
 
             await asyncio.sleep(atkspeed)
@@ -446,7 +260,7 @@ class Boss(commands.Cog):
             await msg.edit(embed=em3)
 
             # Boss has died
-            if boss.health <= 0:
+            if boss.health <= 0 or boss.health == 0:
 
                 boss.health = 0
                 # Check if player is also dead
@@ -456,13 +270,36 @@ class Boss(commands.Cog):
                     player.health = 0
                     em = discord.Embed(title="Boss has defeated you.",description="You were weakened and had to flee the boss fight.",colour=discord.Colour.from_rgb(255, 95, 95))
                     em.timestamp = datetime.utcnow()
-                    return await ctx.send(ctx.author.mention, embed=em)
+                    return await ctx.reply(embed=em)
                     # await ctx.author.remove_roles(keyreq)
 
                 # Boss defeated
                 else:
+                    try:
+                        inv = inventory.find_one({"memberid":ctx.author.id})
+
+                    except:
+                        inventory.insert_one({
+                            "memberid":ctx.author.id,
+                            "blazing_scales":0,
+                            "flaming_fangs":0,
+                            "unrefined_venom":0,
+                            "scorching_hearts":0,
+                            "ancient_fangs":0,
+                            "dragons_breath":0,
+                            "horn_of_hermes":0,
+                            "archion_hearts":0,
+                            "fractured_wings":0,
+                            "serpent_essence":0,      
+                        })
 
                     Economy = eco.find_one({"memberid":ctx.author.id})
+                    #inv = inventory.find_one({"memberid":ctx.author.id})
+                    blazing_scales = inv["blazing_scales"]
+                    flaming_fangs = inv["flaming_fangs"]
+                    venom = inv["unrefined_venom"]
+                    scorching_hearts = inv["scorching_hearts"]
+                    essence = inv["serpent_essence"]
                     kills = Economy["totalBossKills"]
 
                     eco.update_one({"memberid":ctx.author.id},{"$set":{"totalBossKills":kills+1}})
@@ -470,36 +307,127 @@ class Boss(commands.Cog):
                     # LOOT
                     em = discord.Embed(title="Boss has fled.",description="You forced the boss to flee.",colour=discord.Colour.from_rgb(95, 255, 95))
                     
-                    l1 = random.choice(boss.loot)
-                    l2 = random.choice(boss.loot)
-                    l3 = random.choice(boss.loot)
+                    loot = []
+                    for item, weight in boss.loot:
+                        loot.extend([item]*weight)
 
-                    if l1 == ":feather: **Gryphon's Feather**" or l2 == ":feather: **Gryphon's Feather**" or l3 == ":feather: **Gryphon's Feather**":
-                        await ctx.author.add_roles(feather)
+                    l1 = random.choice(loot)
+                    l2 = random.choice(loot)
+                    l3 = random.choice(loot)
 
-                    if l1 == ":eagle: **Gryphon's Claw**" or l2 == ":eagle: **Gryphon's Claw**" or l3 == ":eagle: **Gryphon's Claw**":
-                        await ctx.author.add_roles(claw)
+                    amt1 = 1
+                    amt2 = 1
+                    amt3 = 1
 
-                    if l1 == ":heart: **Gryphon's Heart**" or l2 == ":heart: **Gryphon's Heart**" or l3 == ":heart: **Gryphon's Heart**":
-                        await ctx.author.add_roles(heart)
-                    
-                    em.add_field(name="Loot", value=f"> {l1}\n> {l2}\n> {l3}", inline=False)
+                    if l1.startswith("**COMMON**"):
+                        amt1 = random.randint(1, 4)
+                        blazing_scales += 1*amt1
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"blazing_scales":blazing_scales}})
+
+                    elif l1.startswith("**RARE**"):
+                        flaming_fangs += 1
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"flaming_fangs":flaming_fangs}})
+
+                    elif l1.startswith("**EPIC**"):
+                        venom += 1
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"flaming_fangs":venom}})
+
+                    elif l1.startswith(":star:"):
+                        scorching_hearts += 1
+                        #inventory.update_one({"memberid":ctx.author.id},{"$set":{"scorching_hearts":scorching_hearts}})
+                        legendary_count += 1
+
+                    elif l1.startswith(":star2:"):
+                        essence += 1
+                        #inventory.update_one({"memberid":ctx.author.id},{"$set":{"scorching_hearts":scorching_hearts}})
+                        mythic_count += 1
+
+                    if l2.startswith("**COMMON**"):
+                        amt2 = random.randint(1, 4)
+                        blazing_scales += 1*amt2
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"blazing_scales":blazing_scales}})
+
+                    elif l2.startswith("**RARE**"):
+                        flaming_fangs += 1
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"flaming_fangs":flaming_fangs}})
+
+                    elif l2.startswith("**EPIC**"):
+                        venom += 1
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"unrefined_venom":venom}})
+
+                    elif l2.startswith(":star:"):
+                        scorching_hearts += 1
+                        #inventory.update_one({"memberid":ctx.author.id},{"$set":{"scorching_hearts":scorching_hearts}})
+                        legendary_count += 1
+
+                    elif l2.startswith("***:star2:"):
+                        essence += 1
+                        #inventory.update_one({"memberid":ctx.author.id},{"$set":{"scorching_hearts":scorching_hearts}})
+                        mythic_count += 1
+
+                    if l3.startswith("**COMMON**"):
+                        amt3 = random.randint(1, 4)
+                        blazing_scales += 1*amt3
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"blazing_scales":blazing_scales}})
+
+                    elif l3.startswith("**RARE**"):
+                        flaming_fangs += 1
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"flaming_fangs":flaming_fangs}})
+
+                    elif l3.startswith("**EPIC**"):
+                        venom += 1
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"unrefined_venom":venom}})
+
+                    elif l3.startswith(":star:"):
+                        scorching_hearts += 1
+                        #inventory.update_one({"memberid":ctx.author.id},{"$set":{"scorching_hearts":scorching_hearts}})
+                        legendary_count += 1
+
+                    elif l3.startswith("***:star2:"):
+                        essence += 1
+                        #inventory.update_one({"memberid":ctx.author.id},{"$set":{"scorching_hearts":scorching_hearts}})
+                        mythic_count += 1
+
+                    if legendary_count != 0:
+                        embed = discord.Embed(title="Boss Drops",description=f"{ctx.author.mention} has dropped **{legendary_count}x** :star: **LEGENDARY Scorching Heart!**",colour=discord.Colour.from_rgb(255,215,0))
+                        await self.client.get_channel(774847444617396234).send(embed=embed)
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"scorching_hearts":scorching_hearts}})
+
+                    if mythic_count != 0:
+                        embed = discord.Embed(title="Boss Drops",description=f"{ctx.author.mention} has dropped **{mythic_count}x** :star2: ***MYTHIC! Burning Essence***",colour=discord.Colour.from_rgb(0,0,0))
+                        await ctx.send(embed=embed) #self.client.get_channel(774847444617396234).send(embed=embed)
+                        inventory.update_one({"memberid":ctx.author.id},{"$set":{"serpent_essence":essence}})
+
+                    em.add_field(name="Loot", value=f"> `{amt1}x` {l1}\n> `{amt2}x` {l2}\n> `{amt3}x` {l3}")
                     em.timestamp = datetime.utcnow()
-
-                    if quest_instance == False:
-                        Economy = eco.find_one({"memberid":ctx.author.id})
-                        boss_kills = Economy["totalBossKills"]
-                        eco.update_one({"memberid":ctx.author.id},{"$set":{"totalBossKills":boss_kills+1}})
-
-                    return await ctx.send(ctx.author.mention, embed=em)
-                    # await ctx.author.remove_roles(keyreq)
+                    await ctx.reply(embed=em)
 
             elif player.health <= 0:
                 player.health = 0
                 em = discord.Embed(title="You fled.",description="> You were overpowered and forced to flee, the boss escaped.", colour=discord.Colour.from_rgb(255, 95, 95))
                 em.timestamp = datetime.utcnow()
-                return await ctx.send(embed=em)
+                return await ctx.reply(embed=em)
                 # await ctx.author.remove_roles(keyreq)
+
+    @commands.command()
+    async def trade(self, ctx, *, item, amt: int, member: discord.Member):
+
+        scales = ["scorching scales", "Scorching Scales", "Scorching", "scorching", "scales"]
+
+        if item in scales:
+
+            author_inv = inventory.find_one({"memberid":ctx.author.id})
+            member_inv = inventory.find_one({"memberid":member.id})
+
+            author_scales = author_inv["blazing_scales"]
+            m_inv = member_inv["blazing_scales"]
+
+            if amt < author_scales:
+
+                # make embed,
+                # give item
+                # update db values
+                pass
 
 def setup(client):
     client.add_cog(Boss(client))

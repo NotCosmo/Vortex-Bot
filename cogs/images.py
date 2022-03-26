@@ -1,13 +1,13 @@
 import nextcord as discord
+from nextcord.ext import commands
+from nextcord.ext.commands import BucketType
 import random
 from random import choice
 import datetime
-from nextcord.ext import commands
-from nextcord.ext.commands import BucketType
 import io
 from io import BytesIO
-import aiohttp
 from PIL import Image, ImageFilter, ImageFont, ImageDraw 
+import aiohttp
 
 class Images(commands.Cog):
 
@@ -15,27 +15,6 @@ class Images(commands.Cog):
         self.client = client
 
     #https://some-random-api.ml/canvas/color?avatar=https://cdn.discordapp.com/avatars/560789882738573324/bc220b0eeeabbe234026e4881f3c3b9c.png&username=Telk&displayname=Telk&comment=Hello
-    @commands.command()
-    @commands.cooldown(1, 10, BucketType.user)
-    async def tweet(self, ctx, comment):
-
-        saved = ctx.author.avatar_url_as(static_format="png") 
-        embed = discord.Embed(colour=ctx.author.colour)
-
-        embed.set_image(url=f"https://some-random-api.ml/canvas/tweet?avatar={saved}&username={ctx.author.name}&displayname={ctx.author.name}&comment={comment}")
-        embed.timestamp = datetime.datetime.utcnow()
-        await ctx.send(embed=embed)
-
-    @commands.command()
-    @commands.cooldown(1, 10, BucketType.user)
-    async def ytcomment(self, ctx, comment):
-
-        saved = ctx.author.avatar_url_as(static_format="png") 
-        embed = discord.Embed(colour=ctx.author.colour)
-
-        embed.set_image(url=f"https://some-random-api.ml/canvas/youtube-comment?avatar={saved}&username={ctx.author.name}&comment={comment}")
-        embed.timestamp = datetime.datetime.utcnow()
-        await ctx.send(embed=embed)
 
     @commands.command()
     @commands.cooldown(1, 10, BucketType.user)
@@ -44,7 +23,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
+        saved = member.avatar.with_format("png")
         embed = discord.Embed(colour=member.colour)
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/lolice?avatar={saved}")
@@ -58,7 +37,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
+        saved = member.avatar.with_format("png")
         embed = discord.Embed(colour=member.colour)
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/horny?avatar={saved}")
@@ -72,7 +51,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
+        saved = member.avatar.with_format("png")
         embed = discord.Embed(colour=member.colour)
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/simpcard?avatar={saved}")
@@ -86,7 +65,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
+        saved = member.avatar.with_format("png")
         embed = discord.Embed(colour=member.colour)
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/pixelate?avatar={saved}")
@@ -100,7 +79,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
+        saved = member.avatar.with_format("png")
         embed = discord.Embed(colour=member.colour)
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/jail?avatar={saved}")
@@ -114,7 +93,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
+        saved = member.avatar.with_format("png")
         embed = discord.Embed(colour=member.colour)
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/glass?avatar={saved}")
@@ -128,7 +107,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
+        saved = member.avatar.with_format("png")
         embed = discord.Embed(colour=member.colour)
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/passed?avatar={saved}")
@@ -142,7 +121,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
+        saved = member.avatar.with_format("png")
         embed = discord.Embed(colour=member.colour)
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/wasted?avatar={saved}")
@@ -156,8 +135,8 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        saved = member.avatar_url_as(static_format="png") 
-        embed = discord.Embed(colour=member.colour)
+        saved = member.avatar.with_format("png")
+        embed = discord.Embed(colour=discord.Colour.random())
 
         embed.set_image(url=f"https://some-random-api.ml/canvas/gay?avatar={saved}")
         embed.timestamp = datetime.datetime.utcnow()
@@ -181,19 +160,6 @@ class Images(commands.Cog):
         wanted.save("wantedpic.jpg")
 
         await ctx.send(file = discord.File("wantedpic.jpg"))
-
-    @wanted.error
-    async def wanted_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-
-            await ctx.send(embed=embed)
     
     @commands.command()
     @commands.cooldown(1, 5, BucketType.user)
@@ -203,7 +169,7 @@ class Images(commands.Cog):
             member = ctx.author
 
         wanted = Image.open("rip.png")
-        asset = member.avatar_url_as(size=128)
+        asset = member.avatar.with_format("png")
         data = BytesIO(await asset.read())
         profilepic = Image.open(data)
 
@@ -212,19 +178,6 @@ class Images(commands.Cog):
         wanted.paste(profilepic, (244, 276))
         wanted.save("rippic.png")
         await ctx.send(file = discord.File("rippic.png"))
-
-    @rip.error
-    async def rip_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-
-            await ctx.send(embed=embed)
 
     @commands.command()
     @commands.cooldown(1, 5, BucketType.user)
@@ -267,29 +220,6 @@ class Images(commands.Cog):
         meter.paste(pic2, (876, 224))
         meter.save("meter2.png")
         await ctx.send(f"{user.name} :heart: {user2.name}", file = discord.File("meter2.png"))
-
-    @ship.error
-    async def ship_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Cooldown', icon_url=ctx.author.avatar_url)
-
-            await ctx.send(embed=embed)
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = f"Invalid Arguments: `!ship <user>`.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Command Failed', icon_url=ctx.author.avatar_url)
-
-            await ctx.send(embed=embed)
 
 def setup(client):
     client.add_cog(Images(client))

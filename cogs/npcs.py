@@ -216,6 +216,51 @@ class NPCS(commands.Cog):
             await msg.edit(embed=em)
             eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Amethyst3"}})
 
+        # MERLIN 5 BUT BROKEN
+        elif quest == "Amethyst5":
+
+            em = discord.Embed(
+                title = f"✨ Enchanted Tower",
+                description = '',
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+            em.timestamp = datetime.utcnow()
+            cd = 5
+
+            msg = await ctx.send(embed=em)
+
+            em.description += f"\n\n:crystal_ball: **Merlin**: Hello young one. I shall guess Amethyst sent you to me?"
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: Yeah, she said you had some urgent news that I had to hear right away, is it something about Raven?"
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n:crystal_ball: **Merlin**: It undoubtedly is, Raven's presence was detected near a volcanic region quite far from here, though with your dimensional amulet it shouldn't be too long of a ride."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: Wait wait wait, volcanic region? What am I suppose to do if I even find Raven there, I'm not strong enough to fight him!"
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n:crystal_ball: **Merlin**: I predict you shall not find Raven there, but a clue to where he's headed next, I hear there are ancient beasts lurking around that area, a very old legend."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: Do you mean the legend of Archion?"
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n:crystal_ball: **Merlin**: Not now, young one. I will tell you when the time comes. Right now you will need to reforge your **Azure Splitter**, as it will not be strong enough to fight off the beasts in the volcanic area."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**QUEST OBJECTIVE**: Reforge your weapon, then fight a boss.\n-> Use `>reforge` to continue.\n-> `>boss Serpent`."
+            await msg.edit(embed=em)
+            eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Merlin6"}})
+
     @quest.command(aliases = ["Amethyst"])
     async def amethyst(self, ctx):
 
@@ -225,6 +270,7 @@ class NPCS(commands.Cog):
         feather = find(lambda r: r.name == "🕊️ Gryphon's Feather", ctx.message.guild.roles)
         claw = find(lambda r: r.name == "🐉 Gryphon's Claw", ctx.message.guild.roles)
         heart = find(lambda r: r.name == "❤️ Gryphon's Heart", ctx.message.guild.roles)
+        splitter = find(lambda r: r.name == "⚜️ Azure Splitter", ctx.message.guild.roles)
 
         if quest == "Amethyst1":
 
@@ -430,7 +476,69 @@ class NPCS(commands.Cog):
             await msg.edit(embed=em)
             eco.update_one({"memberid":ctx.author.id},{"$set":{"currentQuest":"Amethyst5"}})
 
-    @commands.command()
+        elif quest == "Amethyst5" and splitter in ctx.author.roles:
+
+            em = discord.Embed(
+                title = f"⚗️ Spellcrafter Hut",
+                description = '',
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+            cd = 5
+            em.timestamp = datetime.utcnow()
+            msg = await ctx.send(embed=em)
+
+            em.description += f"\n\n:crossed_swords: **Amethyst**: Congratulations on crafting the Azure Splitter."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: Thanks.. I hope you will be a little more informative when it comes to crafting magical items next time though."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n:crossed_swords: **Amethyst**: My apologies. It appears Merlin was right about you, you really are something special {ctx.author.name}."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: I've been trying to monitor Raven's activity for a while but haven't been able to get anything, has he gone off the radar?"
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n:crossed_swords: **Amethyst**: Unfortunately Raven has not been off the radar, Merlin and I have been following his tracks ever since we found a note left by one of his higher followers."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: What does it say?"
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n:crossed_swords: **Amethyst**: It was a map leading to an ancient volcano, though we don't have access to it."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: I remember reading about this, aren't there portals that can take you to different regions?"
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n:crossed_swords: **Amethyst**: You may be on to something {ctx.author.name}.. though it requires an extensive form of magic. I might have just the amulet for you."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: More crafting magical items, my favourite past time!"
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n:crossed_swords: **Amethyst**: The amulet has other magical abilities, it'll be a craft worth your time."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**{ctx.author.name}**: Anything that will help in defeating Raven is a craft worth my time."
+            await msg.edit(embed=em)
+
+            await asyncio.sleep(cd)
+            em.description += f"\n\n**QUEST OBJECTIVE**: Craft the newest amulet.\n-> ???\n-> Use `>craft` to start."
+            await msg.edit(embed=em)
+
+    @commands.command(aliases = ["recipes"])
     async def craft(self, ctx, *, item=None):
 
         feather = find(lambda r: r.name == "🕊️ Gryphon's Feather", ctx.message.guild.roles)
@@ -440,8 +548,11 @@ class NPCS(commands.Cog):
         amulet = find(lambda r: r.name == "⚜️ Gryphon's Delirium", ctx.message.guild.roles)
         raven_dagger = find(lambda r: r.name == "✪ Raven's Dagger", ctx.message.guild.roles)
         darkness_amulet = find(lambda r: r.name == "✪ Darkness Amulet", ctx.message.guild.roles)
+        core = find(lambda r: r.name == "Ancient Core", ctx.message.guild.roles)
+        staff = find(lambda r: r.name == "Broken Ancient Staff", ctx.message.guild.roles)
+        dimensional = find(lambda r: r.name == "🔮 Dimensional Amulet", ctx.message.guild.roles)
 
-        if item is None:
+        if item is None or item == '1':
 
             em = discord.Embed(
                 title = "Crafting Guide",
@@ -450,7 +561,22 @@ class NPCS(commands.Cog):
             )
 
             em.add_field(name="⚜️ Azure Splitter (Weapon)", value="> **Required**: Gryphon Feather, Gryphon Claw and Raven's Dagger\n> **Cost**: :gem: 1.5M\n> **Ability**: Gain +10% More Damage in boss fights, along with more base health and base damage.\n<:transparent:911319446918955089>", inline=False)
-            em.add_field(name="⚜️ Gryphon's Delirium (Amulet)", value="> **Required**: Darkness Amulet and Gryphon Heart\n> **Cost**: :gem: 1.5M\n> **Ability**: Gain a passive 1.5x multiplier for income commands as well as a passive 1.5x income for rank collects.", inline=False)
+            em.add_field(name="⚜️ Gryphon's Delirium (Amulet)", value="> **Required**: Darkness Amulet and Gryphon Heart\n> **Cost**: :gem: 1.5M\n> **Ability**: Gain a passive 1.5x multiplier for income commands as well as a passive 1.5x income for rank collects.\n<:transparent:911319446918955089>", inline=False)
+            em.add_field(name="🔮 Dimensional Amulet", value="> **Required**: Broken Ancient Staff, Gryphon's Delirium, Ancient Core\n> **Cost**: :gem: 75M\n> **Ability**: Gain a passive 1.5x multiplier for rank collects as well as a passive 3x multiplier for income commands",inline=False)
+            em.timestamp = datetime.utcnow()
+            em.set_footer(text="Page 1/2")
+            await ctx.send(embed=em)
+
+        elif item == '2' and ctx.author.id == 455971566199767040:
+            em = discord.Embed(
+                title = "Crafting Guide",
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+
+            em.add_field(name="🔥 Hell's Edge (Weapon Part)", value="> **Required**: 30x Blazing Scales, 10x Flaming Fangs, 1x Scorching Heart\n> **Cost**: :gem: 1.5M\n> **Ability**: Gain +10% More Damage in boss fights, along with more base health and base damage.\n<:transparent:911319446918955089>", inline=False)
+            em.add_field(name="🔥 Satan's Hilt (Weapon Part)", value="> **Required**: 30x Blazing Scales, 10x Flaming Fangs, 1x Scorching Heart\n> **Cost**: :gem: 75M\n> **Ability**: Gain a passive 1.5x multiplier for rank collects as well as a passive 3x multiplier for income commands\n<:transparent:911319446918955089>",inline=False)
+            em.add_field(name="🔥 Chimera's Rune (Weapon Part)", value="> **Required**: 30x Blazing Scales, 10x Flaming Fangs, 1x Scorching Heart\n> **Cost**: :gem: 1.5M\n> **Ability**: Gain a passive 1.5x multiplier for income commands as well as a passive 1.5x income for rank collects.", inline=False)
+            em.set_footer(text="Page 2/2")
             em.timestamp = datetime.utcnow()
             await ctx.send(embed=em)
 
@@ -481,7 +607,7 @@ class NPCS(commands.Cog):
                 em.timestamp = datetime.utcnow()
                 await ctx.send(embed=em)
 
-        elif item in ["Gryphon Delirium", "Gryphon delirium", "gryphon delirium"]:
+        elif item in ["Gryphon's Delirium", "Gryphon's delirium", "gryphon's delirium"]:
             
             bal = eco.find_one({"memberid":ctx.author.id})["bal"]
 
@@ -506,6 +632,103 @@ class NPCS(commands.Cog):
                 em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
                 em.timestamp = datetime.utcnow()
                 await ctx.send(embed=em)
+
+        elif item in ["Dimensional Amulet", "Dimensional amulet", "dimensional amulet"]:
+            
+            bal = eco.find_one({"memberid":ctx.author.id})["bal"]
+
+            if bal >= 75000000 and staff in ctx.author.roles and core in ctx.author.roles:
+                em = discord.Embed(
+                    description = "Successfully crafted the **Dimensional Amulet**.",
+                    colour = discord.Colour.from_rgb(0, 208, 255)
+                )
+                em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+                em.timestamp = datetime.utcnow()
+                await ctx.send(embed=em)
+                await ctx.author.remove_roles(staff)
+                await ctx.author.remove_roles(core)
+                await ctx.author.remove_roles(amulet)
+                await ctx.author.add_roles(dimensional)
+                eco.update_one({"memberid":ctx.author.id},{"$set":{"bal":bal-75000000}})
+
+            else:
+                em = discord.Embed(
+                    description = "You do not meet the requirements to craft this amulet.",
+                    colour = discord.Colour.from_rgb(0, 208, 255)
+                )
+                em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+                em.timestamp = datetime.utcnow()
+                await ctx.send(embed=em)
+
+    @commands.command()
+    async def reforge(self, ctx, weapon=None):
+
+        if not weapon:
+
+            em = discord.Embed(
+                title = "Reforge",
+                description = "Reforges are a permanent upgrade that can be done to a weapon, which will increase its strength and grant it new abilities.\n\n:exclamation: To get started, you can start by doing `reforge [weapon]`.",
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+            em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            await ctx.send(embed=em)
+        
+        if weapon in ['azure splitter', 'azure', 'splitter', 'Azure splitter', 'Azure Splitter']:
+
+            if find(lambda r: r.name == "⚜️ Azure Splitter", ctx.message.guild.roles) in ctx.author.roles:
+
+                def check(m):
+                    return ctx.author == m.author
+                
+                em = discord.Embed(
+                    title = ":star: Azure Splitter",
+                    description = "A legendary blade, translated Sky Splitter.",
+                    colour = discord.Colour.from_rgb(0, 208, 255)
+                )
+                em.add_field(name="Reforge Info",value="Upon reforging, the Azure Splitter will grant the user with more damage and health, along with a better ability boost.",inline=False)
+                em.add_field(name="Requirements",value="> 1x Ancient Core\n> 1x Gryphon Heart\n> :gem: 200M",inline=False)
+                em.add_field(name="Reforge Stats",value="> +**15%** Min/Max Damage :crossed_swords:\n> +**15%** Max Health :heart:",inline=False)
+                em.add_field(name="Confirm",value=":exclamation: Type `confirm` into the chat to confirm this reforge. (Timeout = 60s)")
+                await ctx.send(embed=em)
+
+                msg = await self.client.wait_for('message', timeout=60.0, check=check)
+
+                if msg.content.lower() == 'confirm':
+
+                    Economy = eco.find_one({"memberid":ctx.author.id})
+                    bal = Economy["bal"]
+
+                    if find(lambda r: r.name == "Ancient Core", ctx.message.guild.roles) in ctx.author.roles and find(lambda r: r.name == "❤️ Gryphon's Heart", ctx.message.guild.roles):
+
+                        if bal >= 200000000:
+
+                            await ctx.author.remove_roles(find(lambda r: r.name == "⚜️ Azure Splitter", ctx.message.guild.roles))
+                            await ctx.author.remove_roles(find(lambda r: r.name == "Ancient Core", ctx.message.guild.roles))
+                            await ctx.author.remove_roles(find(lambda r: r.name == "❤️ Gryphon's Heart", ctx.message.guild.roles))
+                            await ctx.author.add_roles(find(lambda r: r.name == "⭐ Azure Splitter", ctx.message.guild.roles))
+
+                            em = discord.Embed(description=":star: Azure Splitter reforge successful.",colour=discord.Colour.from_rgb(75, 255, 75))
+                            em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+                            em.timestamp = datetime.utcnow()
+                            eco.update_one({"memberid":ctx.author.id},{"$set":{"bal":bal-200000000}})
+                            return await ctx.send(embed=em)
+
+                        else:
+                            em = discord.Embed(description="You do not meet the requirements to reforge this weapon.",colour=discord.Colour.from_rgb(255, 75, 75))
+                            em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+                            em.timestamp = datetime.utcnow()
+                            return await ctx.send(embed=em)
+
+                    else:
+
+                        em = discord.Embed(description="You do not meet the requirements to reforge this weapon.",colour=discord.Colour.from_rgb(255, 75, 75))
+                        em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+                        em.timestamp = datetime.utcnow()
+                        return await ctx.send(embed=em)
+
+            else:
+                await ctx.send('missing role')
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -537,6 +760,18 @@ class NPCS(commands.Cog):
 
         em = discord.Embed(
             description = f"**Current Quest:** {quest}\n**Objective Counter**: {obj}\n\n*Note: Not all quests require the objective counter, though some quests such as Merlin3 do require it.*",
+            colour = discord.Colour.from_rgb(0, 208, 255)
+        )
+        em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)
+        em.timestamp = datetime.utcnow()
+        await ctx.send(embed=em)
+
+    @commands.command()
+    async def upd(self, ctx):
+
+
+        em = discord.Embed(
+            description = f":crossed_swords: **Amethyst**: Hello there, Merlin has requested you all to report back to him if you have unlocked the **Dimensional Amulet**. If you have not unlocked it, please do as fast as possible.",
             colour = discord.Colour.from_rgb(0, 208, 255)
         )
         em.set_author(name=ctx.author,icon_url=ctx.author.display_avatar)

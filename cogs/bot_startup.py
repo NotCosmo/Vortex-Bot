@@ -1,8 +1,15 @@
 import nextcord as discord
 import datetime, time
+import os
 import asyncio
 from nextcord.ext import commands, tasks
+from nextcord import Interaction, SlashOption
 from main import version
+from pymongo import MongoClient
+
+cluster = MongoClient("mongodb+srv://Cosmo:1H1uqPGjo5CjtHQe@eco.5afje.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+database = cluster["Discord"]
+utils = database["Server_Utils"]
 
 #from main import uptimeCounter, ts, tm, th, td
 
@@ -23,47 +30,31 @@ class StartUp(commands.Cog):
         #await self.client.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.watching, name="Pornhub LIVE"))
         print('> Bot is now online')
         print(f'> {latency}ms')
-
         await self.client.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.watching, name="Pornhub LIVE | .gg/ZUTBBya"))
+        utils.update_one({"tag":"Bot Info"},{"$set":{"uptime_start":time.time()}})
 
-        while True:
-            channel = self.client.get_channel(846039662895169547)
-            
-            em = discord.Embed(
-                description = f"Client Ping **{latency}ms**",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-
-            em.set_author(name="Bot Online", icon_url=self.client.user.avatar.url)
-            em.timestamp = datetime.datetime.utcnow()
-            await channel.send(embed=em)
-            await asyncio.sleep(3600)
-
-
-    @commands.command()
-    async def ping(self, ctx):
-        
-        start = time.time()
+    @discord.slash_command(name="moe",description="hehe",guild_ids=[581139467381768192])
+    async def moe(
+        self,
+        interaction: Interaction,
+    ):
+        await interaction.user.move_to(None)
+    
+    @discord.slash_command(name="ping",description="Bot latency command!",guild_ids=[581139467381768192])
+    async def ping(
+        self,
+        interaction: Interaction,
+    ):
         ping = round(self.client.latency * 1000)
 
         embed = discord.Embed(
             title = ":ping_pong: Pong!",
-            description = f'**Client Ping**: {ping}ms',
+            description = f'**Bot Ping**: {ping}ms',
             colour = discord.Colour.from_rgb(0, 208, 255)
         )
 
         embed.timestamp = datetime.datetime.utcnow()
-        msg = await ctx.send(embed=embed)
-
-        end = time.time()
-        embed2 = discord.Embed(
-            title = ":ping_pong: Pong!",
-            description = f'> **Client Ping**: {ping}ms\n> **API Response Time**: {round((end-start) * 1000)}ms',
-            colour = discord.Colour.from_rgb(0, 208, 255)
-        )
-
-        embed2.timestamp = datetime.datetime.utcnow()
-        await msg.edit(embed=embed2)
+        await interaction.response.send_message(embed=embed)
 
     @commands.command()
     @commands.is_owner()

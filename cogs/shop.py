@@ -73,9 +73,12 @@ class Shop(commands.Cog):
             em.add_field(name="[III] Guardian - :gem: 750,000", value=":star: Gives you :gem: 100,000 every 6 hours.\n:zap: Rank Boost: **3x**\n<:transparent:911319446918955089>", inline=False)
             em.add_field(name="[IV] Elder - :gem: 2,500,000", value=":star: Gives you :gem: 375,000 every 6 hours.\n:zap: Rank Boost: **4x**\n<:transparent:911319446918955089>", inline=False)
             em.add_field(name="[V] Heroic - :gem: 5,000,000", value=":star: Gives you :gem: 500,000 every 6 hours.\n:zap: Rank Boost: **5x**\n<:transparent:911319446918955089>", inline=False)
-            em.add_field(name="[VI] Overlord - :gem: 15,000,000", value=":star: Gives you :gem: 1,500,000 every 6 hours.\n:zap: Rank Boost: **6x**\n<:transparent:911319446918955089>", inline=False)
-            em.add_field(name="[VII] Daunter - :gem: 30,000,000", value=":star: Gives you :gem: 3,500,000 every 6 hours.\n:zap: Rank Boost: **8x**\n<:transparent:911319446918955089>", inline=False)
-            
+            em.add_field(name="[VI] Overlord - :gem: 15,000,000", value=":star: Gives you :gem: 3,000,000 every 6 hours.\n:zap: Rank Boost: **6x**\n<:transparent:911319446918955089>", inline=False)
+            em.add_field(name="[VII] Daunter - :gem: 30,000,000", value=":star: Gives you :gem: 7,500,000 every 6 hours.\n:zap: Rank Boost: **8x**\n<:transparent:911319446918955089>", inline=False)
+            em.add_field(name="[VIII] Magician - :gem: 80,000,000", value=":star: Gives you :gem: 15,000,000 every 6 hours.\n:zap: Rank Boost: **10x**\n<:transparent:911319446918955089>", inline=False)
+            em.add_field(name="[IX] Spirit - :gem: 200,000,000", value=":star: Gives you :gem: 25,000,000 every 6 hours.\n:zap: Rank Boost: **12x**\n<:transparent:911319446918955089>", inline=False)
+            em.add_field(name="[X] Divine - :gem: 750,000,000", value=":star: Gives you :gem: 50,000,000 every 6 hours.\n:zap: Rank Boost: **15x**\n<:transparent:911319446918955089>", inline=False)
+
             em.timestamp = datetime.datetime.utcnow()
             em.set_author(name="Cosmo's Lounge Shop", icon_url=ctx.guild.icon.url)
             em.set_footer(text="Page 1/1")
@@ -409,6 +412,129 @@ class Shop(commands.Cog):
                 if bal >= price:
                     
                     em = discord.Embed(description = "You have bought **[VII] Daunter** rank!", colour=discord.Colour.from_rgb(0, 208, 255))
+                    em.timestamp = datetime.datetime.utcnow()
+                    em.set_author(name="Purchase Successful", icon_url=ctx.message.guild.icon.url)
+                    
+                    await ctx.author.add_roles(rank)
+                    await ctx.send(embed=em)
+
+                    newBal = bal - price
+                    eco.update_one({"memberid":id},{"$set":{"bal": newBal}})
+
+                # If user is too poor
+                else:
+                    em = discord.Embed(description = f"You do not have enough money to buy this item, you need :gem: {(price-bal):,} more!", colour=discord.Colour.from_rgb(0, 208, 255))                    
+                    em.timestamp = datetime.datetime.utcnow()
+                    em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                    await ctx.send(embed=em)
+
+            # User does not have previous rank
+            elif prev_rank not in ctx.author.roles:
+                em = discord.Embed(description = f"You do not meet the requirements for this rank. Purchase {prev_rank.mention} first!", colour=discord.Colour.from_rgb(0, 208, 255))
+                em.timestamp = datetime.datetime.utcnow()
+                em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                await ctx.send(embed=em)
+                
+            else:
+                em = discord.Embed(description = f"You already own this rank, consider buying a higher tier rank!", colour=discord.Colour.from_rgb(0, 208, 255))
+                em.timestamp = datetime.datetime.utcnow()
+                em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                await ctx.send(embed=em)
+
+        elif item in ['Magician', 'magician']:
+    
+            rank = find(lambda r: r.name == "[VIII] Magician", ctx.message.guild.roles)
+            prev_rank = find(lambda r: r.name == "[VII] Daunter", ctx.message.guild.roles)
+            price = 80000000
+
+            # If user has rank
+            if (rank not in ctx.author.roles) and (prev_rank in ctx.author.roles):
+
+                if bal >= price:
+                    
+                    em = discord.Embed(description = "You have bought **[VIII] Magician** rank!", colour=discord.Colour.from_rgb(0, 208, 255))
+                    em.timestamp = datetime.datetime.utcnow()
+                    em.set_author(name="Purchase Successful", icon_url=ctx.message.guild.icon.url)
+                    
+                    await ctx.author.add_roles(rank)
+                    await ctx.send(embed=em)
+
+                    newBal = bal - price
+                    eco.update_one({"memberid":id},{"$set":{"bal": newBal}})
+
+                # If user is too poor
+                else:
+                    em = discord.Embed(description = f"You do not have enough money to buy this item, you need :gem: {(price-bal):,} more!", colour=discord.Colour.from_rgb(0, 208, 255))                    
+                    em.timestamp = datetime.datetime.utcnow()
+                    em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                    await ctx.send(embed=em)
+
+            # User does not have previous rank
+            elif prev_rank not in ctx.author.roles:
+                em = discord.Embed(description = f"You do not meet the requirements for this rank. Purchase {prev_rank.mention} first!", colour=discord.Colour.from_rgb(0, 208, 255))
+                em.timestamp = datetime.datetime.utcnow()
+                em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                await ctx.send(embed=em)
+                
+            else:
+                em = discord.Embed(description = f"You already own this rank, consider buying a higher tier rank!", colour=discord.Colour.from_rgb(0, 208, 255))
+                em.timestamp = datetime.datetime.utcnow()
+                em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                await ctx.send(embed=em)
+
+        elif item in ['Spirit', 'spirit']:
+    
+            rank = find(lambda r: r.name == "[IX] Spirit", ctx.message.guild.roles)
+            prev_rank = find(lambda r: r.name == "[VIII] Magician", ctx.message.guild.roles)
+            price = 200000000
+
+            # If user has rank
+            if (rank not in ctx.author.roles) and (prev_rank in ctx.author.roles):
+
+                if bal >= price:
+                    
+                    em = discord.Embed(description = "You have bought **[IX] Spirit** rank!", colour=discord.Colour.from_rgb(0, 208, 255))
+                    em.timestamp = datetime.datetime.utcnow()
+                    em.set_author(name="Purchase Successful", icon_url=ctx.message.guild.icon.url)
+                    
+                    await ctx.author.add_roles(rank)
+                    await ctx.send(embed=em)
+
+                    newBal = bal - price
+                    eco.update_one({"memberid":id},{"$set":{"bal": newBal}})
+
+                # If user is too poor
+                else:
+                    em = discord.Embed(description = f"You do not have enough money to buy this item, you need :gem: {(price-bal):,} more!", colour=discord.Colour.from_rgb(0, 208, 255))                    
+                    em.timestamp = datetime.datetime.utcnow()
+                    em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                    await ctx.send(embed=em)
+
+            # User does not have previous rank
+            elif prev_rank not in ctx.author.roles:
+                em = discord.Embed(description = f"You do not meet the requirements for this rank. Purchase {prev_rank.mention} first!", colour=discord.Colour.from_rgb(0, 208, 255))
+                em.timestamp = datetime.datetime.utcnow()
+                em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                await ctx.send(embed=em)
+                
+            else:
+                em = discord.Embed(description = f"You already own this rank, consider buying a higher tier rank!", colour=discord.Colour.from_rgb(0, 208, 255))
+                em.timestamp = datetime.datetime.utcnow()
+                em.set_author(name="Purchase Failed", icon_url=ctx.message.guild.icon.url)
+                await ctx.send(embed=em)
+
+        elif item in ['Divine', 'divine']:
+    
+            rank = find(lambda r: r.name == "[X] Divine", ctx.message.guild.roles)
+            prev_rank = find(lambda r: r.name == "[IX] Spirit", ctx.message.guild.roles)
+            price = 750000000
+
+            # If user has rank
+            if (rank not in ctx.author.roles) and (prev_rank in ctx.author.roles):
+
+                if bal >= price:
+                    
+                    em = discord.Embed(description = "You have bought **[X] Divine** rank!", colour=discord.Colour.from_rgb(0, 208, 255))
                     em.timestamp = datetime.datetime.utcnow()
                     em.set_author(name="Purchase Successful", icon_url=ctx.message.guild.icon.url)
                     

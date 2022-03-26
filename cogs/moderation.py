@@ -1,216 +1,449 @@
 import nextcord as discord
-import random
-import asyncio
-import time
+from nextcord import Interaction
 from datetime import datetime
 from nextcord.ext import commands
-from nextcord.ext.commands import cooldown, BucketType
+from nextcord.ext.commands import BucketType
+from pymongo import MongoClient
 
-class AdminCmds(commands.Cog):
+cluster = MongoClient("mongodb+srv://Cosmo:1H1uqPGjo5CjtHQe@eco.5afje.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+database = cluster["Discord"]
+db = database["Warns"]
+lockdown = database["Lockdown"]
+utils = database["Server_Utils"]
+
+class Staff(commands.Cog, description="Moderation and Economy config commands."):
 
     def __init__(self, client):
         self.client = client
+        self.db = db
+        self.lockdown = lockdown
+        self.utils = utils
 
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-	    pass
+    @commands.command(aliases=['dm', 'send'])
+    @commands.is_owner()
+    async def dm_user(self, ctx, user: discord.User, *, message: str) -> None:
+        await ctx.message.delete()
+        try:
+            return await user.send(message)
+        except Exception:
+            return await ctx.author.send("Could not dm user.")
+            
+    
+    @commands.command(aliases=['cr', 'createrole'])
+    async def create_role(self, ctx, *, name: str='new role'):
 
-    #Lockdown#----------#
+        role = await ctx.guild.create_role(name=name)
+        em = discord.Embed(
+            colour = discord.Colour.from_rgb(47, 49, 55),
+            title = f':gear: Created role {role.mention}.'
+        )
+        em.timestamp = datetime.utcnow()
+        return await ctx.send(embed=em)
+    
+    @discord.user_command(name="Bot Info", guild_ids=[581139467381768192])
+    async def bot_info(self, i: Interaction, member):
+
+        data = self.utils.find_one({"tag":"Bot Info"})
+        created = data["create_date"]
+        uptime = int(data["uptime_start"])
+        em = discord.Embed(colour = discord.Colour.from_rgb(0, 208, 255))
+        em.add_field(name="__About__", value=f"Hey, I'm Vortex. I'm a multi-purpose bot made for this server for any purpose you would need. From basic fun modules, to a fully fledged economy system! (*Made using `nextcord`*)\n\n**Developer** `cosmo.#5056`\n**Created** <t:{created}:R>\n\n",inline=False)
+        em.add_field(name="__Bot Stats__", value=f":robot: **Bot Ping** {round(self.client.latency * 1000, 2)}ms\n:stopwatch: **Uptime** <t:{uptime}:R>",inline=False)
+        em.set_author(name="Bot Info",icon_url=self.client.user.display_avatar)
+        em.timestamp = datetime.utcnow()
+        await i.send(embed=em)
+    
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def lockdown(self, ctx, *, reason=None):
+    async def warn(self, ctx, user: discord.Member, *, reason: str="No reason provided."):
+
+        user_warns = self.db.count_documents({"user_id":user.id})
+        data = self.db.find_one({"tag":"Cases"})
+        cases = data["count"]
+        time_now = datetime.now().timestamp()
         
-        if reason is None:
-            reason = 'No reason provided.'
+        self.db.insert_one({
+            "_case_id":cases+1,
+            "case_type":"warning",
+            "user_id":user.id,
+            "reason":reason,
+            "moderator_id":ctx.author.id,
+            "time":time_now,
+            "deleted":False
+        })
+        
+        # Update total warns
+        self.db.update_one({"tag":"Cases"},{"$set":{"count":cases+1}})
+        
+        em = discord.Embed(
+            title = ":warning: Warning",
+            colour = discord.Colour.from_rgb(47, 49, 55),
+            description = f'{user.mention} has been warned for: __{reason}__'
+        ).set_footer(text=f"Warn ID: {cases+1}")
+        em.timestamp = datetime.utcnow()
+        await ctx.message.delete()
+        await ctx.send(embed=em)
 
-        embed = discord.Embed(
-            title = "Server Lockdown",
-            description = ':lock: ' + reason,
-            colour = discord.Colour.from_rgb(255, 75, 75)
+        logs = self.client.get_channel(944574562589356092)
+        log_embed = discord.Embed(
+            title = f":warning: Warning (Case {cases+1})",
+            colour = discord.Colour.from_rgb(47, 49, 55)
         )
-        embed.timestamp = datetime.utcnow()
-
-        ids = [735765424108601386, 885250888929775666, 814797941612609537, 887700373408722984, 814797661261398076, 868541058466844702, 842977359229485058, 814797556147421275, 814797594466451466, 830809651724943380, 735796560792780891, 814787175576109067, 814787195428405259, 872450532659327016]
-        #ids = [771679224716197899, 842812145791402004]
-
-        for ch in ids:
-            channel = self.client.get_channel(ch)
-            await channel.set_permissions(ctx.guild.default_role, send_messages=False)
-            await channel.send(embed=embed)
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def unlockdown(self, ctx):
-
-        ids = [735765424108601386, 885250888929775666, 814797941612609537, 887700373408722984, 814797661261398076, 868541058466844702, 842977359229485058, 814797556147421275, 830809651724943380]
-        #ids = [771679224716197899, 842812145791402004]
-
-        embed = discord.Embed(
-            title = "Server Lockdown",
-            description = ':unlock: Lockdown has ended, thank you for your patience.',
-            colour = discord.Colour.from_rgb(255, 75, 75)
-        )
-        embed.timestamp = datetime.utcnow()
-
-        for ch in ids:
-            channel = self.client.get_channel(ch)
-            await channel.set_permissions(ctx.guild.default_role, send_messages=None)
-            await channel.send(embed=embed)
+        log_embed.set_thumbnail(url=user.display_avatar)
+        log_embed.add_field(name="User", value=f"{user.mention}",inline=False)
+        log_embed.add_field(name="Moderator", value=f"{ctx.author.mention}",inline=False)
+        log_embed.add_field(name="Warned At", value=f"<t:{int(time_now)}:t> | <t:{int(time_now)}:R>",inline=False)
+        log_embed.add_field(name="Reason", value=f"{reason}",inline=False)
+        log_embed.timestamp = datetime.utcnow()
+        await logs.send(embed=log_embed)
 
     #Ban#--------------#
     @commands.command()
     @commands.cooldown(1, 3, BucketType.user)
     @commands.has_permissions(ban_members=True)
-    async def ban(self, ctx, user: discord.Member, *, reason=None):
+    async def ban(self, ctx, user: discord.Member, *, reason="No reason provided."):
+
+        user_warns = self.db.count_documents({"user_id":user.id})
+        data = self.db.find_one({"tag":"Cases"})
+        cases = data["count"]
+        time_now = datetime.now().timestamp()
 
         try:
-            embed = discord.Embed(
-                description = f'{user.mention} was banned from **{ctx.guild.name}** for {reason}.',
-                colour = discord.Colour.from_rgb(119, 178, 86)
-            )
-
-            embed.set_author(name=f'User Banned', icon_url = ctx.author.avatar.url)
-            embed.set_footer(text = f'User banned by {ctx.author}')
 
             await user.ban(reason=reason)
+        
+            self.db.insert_one({
+                "_case_id":cases+1,
+                "case_type":"ban",
+                "user_id":user.id,
+                "reason":reason,
+                "moderator_id":ctx.author.id,
+                "time":time_now,
+                "deleted":False
+            })
+            
+            # Update total warns
+            self.db.update_one({"tag":"Cases"},{"$set":{"count":cases+1}})
+            
+            em = discord.Embed(
+                title = ":warning: Ban",
+                colour = discord.Colour.from_rgb(47, 49, 55),
+                description = f'{user.mention} has been banned for: __{reason}__'
+            ).set_footer(text=f"Ban ID: {cases+1}")
+            em.timestamp = datetime.utcnow()
             await ctx.message.delete()
-            await ctx.send(embed=embed)
-
-        except Exception:
-            embed = discord.Embed(
-                description = f'Bot does not have enough permissions to ban member.',
-                colour = discord.Colour.from_rgb(255, 91, 91)
+            await ctx.send(embed=em)
+    
+            logs = self.client.get_channel(944574562589356092)
+            log_embed = discord.Embed(
+                title = f":warning: Ban (Case {cases+1})",
+                colour = discord.Colour.from_rgb(47, 49, 55)
             )
-            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)
-            embed.set_footer(text = f'{ctx.author}')
-            await ctx.send(embed=embed)
+            log_embed.set_thumbnail(url=user.display_avatar)
+            log_embed.add_field(name="User", value=f"{user.mention}",inline=False)
+            log_embed.add_field(name="Moderator", value=f"{ctx.author.mention}",inline=False)
+            log_embed.add_field(name="Banned At", value=f"<t:{int(time_now)}:t> | <t:{int(time_now)}:R>",inline=False)
+            log_embed.add_field(name="Reason", value=f"{reason}",inline=False)
+            log_embed.timestamp = datetime.utcnow()
+            return await logs.send(embed=log_embed)
 
-
-    #--------------#
-    @ban.error
-    async def ban_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
+        except:
+            em = discord.Embed(
+                title = f":warning: Protection Error",
+                description = 'That user is protected, I cannot ban them!',
+                colour = discord.Colour.from_rgb(47, 49, 55)
             )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar.url)
-            await ctx.send(embed=embed)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = 
-                f'**Command Format**\n• `!ban <user> (reason)`\n \n**Example**\n• `!ban @cosmo.#5056`\n• `!ban @cosmo.#5056 Using bad words!`',
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Ban Command', icon_url = ctx.author.avatar.url)
-            embed.set_footer(text='- Arguments in () are optional.')
-            await ctx.send(embed=embed)
-
-        elif isinstance(error, commands.MissingPermissions):
-            embed = discord.Embed(
-                description = f'You do not have enough permissions to run this command.',
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Permission Error', icon_url = ctx.author.avatar.url)
-            await ctx.send(embed=embed)
-
-    #Kick#--------------#
+    #Ban#--------------#
     @commands.command()
     @commands.cooldown(1, 3, BucketType.user)
     @commands.has_permissions(kick_members=True)
-    async def kick(self, ctx, user: discord.Member, *, reason=None):
+    async def kick(self, ctx, user: discord.Member, *, reason="No reason provided."):
+
+        user_warns = self.db.count_documents({"user_id":user.id})
+        data = self.db.find_one({"tag":"Cases"})
+        cases = data["count"]
+        time_now = datetime.now().timestamp()
 
         try:
-            embed = discord.Embed(
-                description = f'{user.mention} was kicked from **{ctx.guild.name}** for {reason}.',
-                colour = discord.Colour.from_rgb(119, 178, 86)
-            )
-
-            embed.set_author(name=f'User Kicked', icon_url = ctx.author.avatar.url)
-            embed.set_footer(text = f'User kicked by {ctx.author}')
 
             await user.kick(reason=reason)
+        
+            self.db.insert_one({
+                "_case_id":cases+1,
+                "case_type":"kick",
+                "user_id":user.id,
+                "reason":reason,
+                "moderator_id":ctx.author.id,
+                "time":time_now,
+                "deleted":False
+            })
+            
+            # Update total warns
+            self.db.update_one({"tag":"Cases"},{"$set":{"count":cases+1}})
+            
+            em = discord.Embed(
+                title = ":warning: Kick",
+                colour = discord.Colour.from_rgb(47, 49, 55),
+                description = f'{user.mention} has been kicked for: __{reason}__'
+            ).set_footer(text=f"Kick ID: {cases+1}")
+            em.timestamp = datetime.utcnow()
             await ctx.message.delete()
-            await ctx.send(embed=embed)
-
-        except Exception:
-            embed = discord.Embed(
-                description = f'Bot does not have enough permissions to kick member.',
-                colour = discord.Colour.from_rgb(255, 91, 91)
+            await ctx.send(embed=em)
+    
+            logs = self.client.get_channel(944574562589356092)
+            log_embed = discord.Embed(
+                title = f":warning: Kick (Case {cases+1})",
+                colour = discord.Colour.from_rgb(47, 49, 55)
             )
-            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)
-            embed.set_footer(text = f'{ctx.author}')
-            await ctx.send(embed=embed)
+            log_embed.set_thumbnail(url=user.display_avatar)
+            log_embed.add_field(name="User", value=f"{user.mention}",inline=False)
+            log_embed.add_field(name="Moderator", value=f"{ctx.author.mention}",inline=False)
+            log_embed.add_field(name="Kicked At", value=f"<t:{int(time_now)}:t> | <t:{int(time_now)}:R>",inline=False)
+            log_embed.add_field(name="Reason", value=f"{reason}",inline=False)
+            log_embed.timestamp = datetime.utcnow()
+            return await logs.send(embed=log_embed)
 
-
-    #--------------#
-    @kick.error
-    async def kick_error(self, ctx: commands.Context, error: commands.CommandError):
-
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = discord.Embed(
-                description = f"Command is on cooldown, try again after **{round(error.retry_after, 1)}** seconds.",
-                colour = discord.Colour.from_rgb(255, 91, 91)
+        except:
+            em = discord.Embed(
+                title = f":warning: Protection Error",
+                description = 'That user is protected, I cannot kick them!',
+                colour = discord.Colour.from_rgb(47, 49, 55)
             )
-            embed.set_author(name=f'Cooldown', icon_url = ctx.author.avatar.url)
-            await ctx.send(embed=embed)
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                description = 
-                f'**Command Format**\n• `!kick <user> (reason)`\n \n**Example**\n• `!kick @cosmo.#5056`\n• `!kick @cosmo.#5056 Being rude!`',
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Kick Command', icon_url = ctx.author.avatar.url)
-            embed.set_footer(text='- Arguments in () are optional.')
-            await ctx.send(embed=embed)
-
-        elif isinstance(error, commands.MissingPermissions):
-            embed = discord.Embed(
-                description = f'You do not have enough permissions to run this command.',
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            embed.set_author(name=f'Permission Error', icon_url = ctx.author.avatar.url)
-            await ctx.send(embed=embed)
-
-    #Role#--------------#
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+    
     @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def case(self, ctx, case_id: int):
+
+        try:
+            data = self.db.find_one({"_case_id":case_id})
+
+            user_id = data['user_id']
+            mod_id = data['moderator_id']
+            reason = data['reason']
+            time = data['time']
+            type = data['case_type']
+    
+            em = discord.Embed(
+                title = f':warning: Case {case_id} [{type[0].upper() + type[1:]}]',
+                description = "",
+                colour = discord.Colour.from_rgb(47, 49, 55)
+            )
+                
+            user = ctx.guild.get_member(user_id).mention
+            mod = ctx.guild.get_member(mod_id).mention
+            user_av = ctx.guild.get_member(user_id).display_avatar
+                
+            em.set_thumbnail(url=user_av)
+            if data["deleted"] == True:
+                em.description += ":lock: **This case has been deleted.**"
+            em.description += f"\n\n**User:** {user}\n**Moderator**: {mod}\n\n**Reason**: {reason}\n**Time**: <t:{int(time)}:t> | <t:{int(time)}:R>"
+            
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+            
+        except:
+            em = discord.Embed(
+                title = ':warning: Error',
+                description = f'Could not find a case with the ID `{case_id}`.',
+                colour = discord.Colour.from_rgb(47, 49, 55)
+            )
+            return await ctx.send(embed=em)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def cases(self, ctx, user: discord.Member):
+
+        em = discord.Embed(
+            title = f'Cases for {user}',
+            description = '',
+            colour = discord.Colour.from_rgb(47, 49, 55)
+        )
+        
+        data = self.db.find().sort("_case_id",-1)
+        for entry in data:
+            try:
+                if entry['user_id'] == user.id:
+                    mod_id = entry['moderator_id']
+                    reason = entry['reason']
+                    time = entry['time']
+                    type = entry['case_type']
+    
+                    mod = ctx.guild.get_member(mod_id).mention
+                    if entry['deleted'] != True:
+                        em.description += f"\n\n**{type[0].upper() + type[1:]} - Case {entry['_case_id']}**\n- `Reason`: {reason}\n- `Mod`: {mod}\n- `Time`: <t:{int(time)}:t> | <t:{int(time)}:R>"
+            except:
+                pass
+            
+        await ctx.send(embed=em)
+        
+    @commands.command() 
+    @commands.has_permissions(administrator=True)
+    async def delcase(self, ctx, case_id: int):
+
+        self.db.update_one({"_case_id":case_id},{"$set":{"deleted":True}})
+        em = discord.Embed(
+            title = ':warning: Case Deleted',
+            description = f'Deleted case ID `{case_id}`.',
+            colour = discord.Colour.from_rgb(47, 49, 55)
+        )
+        return await ctx.send(embed=em)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def clearcases(self, ctx, user: discord.Member):
+
+        em = discord.Embed(
+            title = ':warning: Cases Cleared',
+            description = f'Cases cleared for {user.mention}.',
+            colour = discord.Colour.from_rgb(47, 49, 55)
+        )
+        
+        data = self.db.find().sort("_case_id",-1)
+        for entry in data:
+            try:
+                if entry['user_id'] == user.id:
+                    case_id = entry['case_id']
+                    self.db.update_one({"_case_id":case_id},{"$set":{"deleted":True}})
+            except:
+                pass
+        await ctx.send(embed=em)
+    
+    @commands.command(aliases = ['umc'], hidden=True)
+    @commands.has_permissions(administrator=True)
+    async def updatemembercount(self, ctx):
+
+        await self.client.get_channel(929330258816159815).edit(name=f"👤 Members: {len(ctx.guild.members)}")
+        await ctx.message.add_reaction('✅')
+
+    @commands.command(aliases=['add-lock','addlock'])
+    @commands.has_permissions(administrator=True)
+    async def add_lock(self, ctx, channel: discord.TextChannel):
+
+        self.lockdown.insert_one({"_channelid":channel.id})
+            
+        em = discord.Embed(
+            title = ':hammer_pick: Channel Added',
+            description = f'Added <#{channel.id}> to lock database.',
+            colour = discord.Colour.from_rgb(47, 49, 55)
+        )
+        em.timestamp = datetime.utcnow()
+        await ctx.send(embed=em)
+
+    @commands.command(aliases=['remove-lock','removelock'])
+    @commands.has_permissions(administrator=True)
+    async def remove_lock(self, ctx, channel: discord.TextChannel):
+
+        self.lockdown.delete_one({"_channelid":channel.id})
+            
+        em = discord.Embed(
+            title = ':hammer_pick: Channel Added',
+            description = f'Removed <#{channel.id}> from lock database.',
+            colour = discord.Colour.from_rgb(47, 49, 55)
+        )
+        em.timestamp = datetime.utcnow()
+        await ctx.send(embed=em)
+
+    @commands.command(aliases=['lockdown-display', 'lockchannels', 'lc'])
+    @commands.has_permissions(administrator=True)
+    async def lockdowndisplay(self, ctx):
+
+        data = self.lockdown.find().sort("_channelid",-1)
+        desc = ''
+        
+        for i in data:
+
+            id = i['_channelid']
+            desc += f'<#{id}>, '
+
+        await ctx.send(f"Lockdown list: {desc}")
+        
+    #Lockdown#----------#
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def lockdown(self, ctx, *, reason='No reason provided.'):
+
+        things = self.lockdown.find().sort("_channelid",-1)
+        for data in things:
+            try:
+                _channel = data["_channelid"]
+                channel = self.client.get_channel(_channel)
+                await channel.set_permissions(ctx.guild.default_role, send_messages=False)
+                em = discord.Embed(
+                    title = ':lock: Lockdown',
+                    description = f'{reason}',
+                    colour = discord.Colour.from_rgb(47, 49, 55)
+                )
+                em.timestamp = datetime.utcnow()
+                await channel.send(embed=em)
+            except:
+                raise
+    
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def unlockdown(self, ctx):
+
+        things = self.lockdown.find().sort("_channelid",-1)
+        for data in things:
+            try:
+                _channel = data["_channelid"]
+                channel = self.client.get_channel(_channel)
+                await channel.set_permissions(ctx.guild.default_role, send_messages=None)
+            except:
+                pass
+        
+            
+    #Role#--------------#
+    @commands.command(aliases=['addrole', 'ar'])
     @commands.cooldown(1, 3, BucketType.user)
     @commands.has_permissions(manage_roles=True)
-    async def role(self, ctx, user : discord.Member, *, role : commands.RoleConverter):
+    async def role(self, ctx, user : discord.Member, *, _role):
 
-        if role.position > ctx.author.top_role.position: 
-            embed = discord.Embed(
-                description = f'Cannot assign role, that role is above your highest role.',
-                colour = discord.Colour.from_rgb(255, 91, 91)
-            )
-            
-            embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)            
-            await ctx.send(embed=embed)
+        for r in ctx.guild.roles:
 
-        if role in user.roles:
-            embed = discord.Embed(
-                description = f'{role.mention} role removed from {user.mention}.',
-                colour = discord.Colour.from_rgb(119, 178, 86)
-            )
+            if r.name.lower().startswith(_role.lower()):
+                role = r
 
-            embed.set_author(name=f'Role Removed', icon_url = ctx.author.avatar.url)
-            embed.set_footer(text = f'Role removed by {ctx.author}')
-            await user.remove_roles(role) 
-            await ctx.send(embed=embed)
+                if r.position > ctx.author.top_role.position:
 
-        else:
-            embed = discord.Embed(
-                description = f'{role.mention} role added to {user.mention}.',
-                colour = discord.Colour.from_rgb(119, 178, 86)
-            )
+                    embed = discord.Embed(
+                        description = f'Cannot assign role, that role is above your highest role.',
+                        colour = discord.Colour.from_rgb(255, 91, 91)
+                    )
+                    
+                    embed.set_author(name=f'Command Failed', icon_url = ctx.author.avatar.url)            
+                    return await ctx.send(embed=embed)
 
-            embed.set_author(name=f'Role Added', icon_url = ctx.author.avatar.url)
-            embed.set_footer(text = f'Role added by {ctx.author}')
-            await user.add_roles(role) 
-            await ctx.send(embed=embed)
+                if r in user.roles:
+
+                    embed = discord.Embed(
+                        description = f'{role.mention} role removed from {user.mention}.',
+                        colour = discord.Colour.from_rgb(119, 178, 86)
+                    )
+
+                    embed.set_author(name=f'Role Removed', icon_url = ctx.author.avatar.url)
+                    embed.set_footer(text = f'Role removed by {ctx.author}')
+                    await user.remove_roles(role) 
+                    return await ctx.send(embed=embed)
+
+                else:
+                    await ctx.author.add_roles(r)
+                    embed = discord.Embed(
+                        description = f'{role.mention} role added to {user.mention}.',
+                        colour = discord.Colour.from_rgb(119, 178, 86)
+                    )
+
+                    embed.set_author(name=f'Role Added', icon_url = ctx.author.avatar.url)
+                    embed.set_footer(text = f'Role added by {ctx.author}')
+                    await user.add_roles(role) 
+                    return await ctx.send(embed=embed) 
+
+            else:
+                pass
 
     #--------------#
     @role.error
@@ -243,23 +476,23 @@ class AdminCmds(commands.Cog):
 
     @commands.command(aliases = ["clear", "clean"])
     @commands.has_permissions(administrator=True)
-    async def purge(self, ctx, amt: int, silent: str=None):
+    async def purge(self, ctx, amt: int, announce: str=None):
 
         if amt <= 100:
 
-            if silent is None:
+            if announce is not None:
                 embed = discord.Embed(
                     title = "Purge Complete",
                     description = f"**{amt}** messages cleared by {ctx.author.mention}.",
                     colour = discord.Colour.from_rgb(255, 50, 50)
                 )
 
-                embed.timestamp = datetime.datetime.utcnow()
+                embed.timestamp = datetime.utcnow()
                 await ctx.message.delete()
                 await ctx.channel.purge(limit=amt)
                 await ctx.send(embed=embed)
 
-            if silent == "-s":
+            if announce is None:
 
                 await ctx.message.delete()
                 await ctx.channel.purge(limit=amt)
@@ -275,7 +508,7 @@ class AdminCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(255, 75, 75)
             )
             
-            embed.timestamp = datetime.datetime.utcnow()
+            embed.timestamp = datetime.utcnow()
             await ctx.send(embed=embed)
             await ctx.message.delete()
 
@@ -290,7 +523,7 @@ class AdminCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(255, 75, 75)
             )
 
-            embed.timestamp = datetime.datetime.utcnow()
+            embed.timestamp = datetime.utcnow()
             await ctx.send(embed=embed)
 
         if isinstance(error, commands.MissingRequiredArgument):
@@ -301,79 +534,8 @@ class AdminCmds(commands.Cog):
                 colour = discord.Colour.from_rgb(255, 75, 75)
             )
 
-            embed.timestamp = datetime.datetime.utcnow()
+            embed.timestamp = datetime.utcnow()
             await ctx.send(embed=embed)
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def ecoupdate(self, ctx):
-
-        embed = discord.Embed(
-            title = 'Locked',
-            description = f'New update in progress!',
-            colour = discord.Colour.from_rgb(255, 91, 91)
-        )
-        embed.set_author(name='Lockdown', icon_url=ctx.author.icon_url)
-        embed.set_footer(text=f'Lockdown initiated by {ctx.author.name}')
-        
-        eco1 = self.client.get_channel(735796560792780891)
-        eco2 = self.client.get_channel(814787175576109067)
-        eco3 = self.client.get_channel(814787195428405259)
-
-        await eco1.channel.set_permissions(ctx.guild.default_role, send_messages=False)
-        await eco1.send(embed=embed)
-
-        await eco2.channel.set_permissions(ctx.guild.default_role, send_messages=False)
-        await eco2.send(embed=embed)
-
-        await eco3.channel.set_permissions(ctx.guild.default_role, send_messages=False)
-        await eco3.send(embed=embed)
-        await ctx.channel.send('Lockdown complete.')
-
-    @commands.command()
-    @commands.is_owner()
-    async def a(self, ctx, user: discord.Member):
-
-        await user.edit(nick=None)
-
-    @commands.command(aliases = ['mn'])
-    @commands.is_owner()
-    async def massnick(self, ctx, *, nickArg=None):
-
-        count = 0
-        errors = 0
-
-        start = time.time()
-        processing = discord.Embed(
-            description = f"> :gear: **Status:** `Processing`\n> :gear: **Users:**: `{ctx.guild.member_count}`\n> :gear: ***Attempting to change nickname for `{ctx.guild.member_count}` members.***",
-            colour = discord.Colour.from_rgb(255, 165, 0)
-        )
-        processing.timestamp = datetime.utcnow()
-        await ctx.send(embed=processing)
-
-        for member in ctx.guild.members:
-            try:
-                await member.edit(nick=None)
-                count += 1
-            except:
-                errors += 1
-
-        stop = time.time()
-        embed = discord.Embed(
-            description = f"> :white_check_mark: **Status:** `Complete`\n> :ballot_box_with_check: **Nicked Users:** `{count}`\n> :clock1: **Time Elapsed:** `{round(stop-start)}s` \n> :x: ***{errors} nicknames could not be changed.***",
-            colour = discord.Colour.from_rgb(50, 205, 50)
-        )
-        embed.timestamp = datetime.utcnow()
-        await ctx.send(embed=embed)
-
-    @commands.command()
-    async def lol(self, ctx):
-        processing = discord.Embed(
-            description = f":jack_o_lantern: **The Headless Horseman** has awoken..",
-            colour = discord.Colour.from_rgb(255, 165, 0)
-        )
-        processing.timestamp = datetime.utcnow()
-        await ctx.send(embed=processing)
-
 def setup(client):
-    client.add_cog(AdminCmds(client))
+    client.add_cog(Staff(client))

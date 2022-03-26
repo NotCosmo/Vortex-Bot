@@ -12,7 +12,7 @@ from nextcord.ext.commands import BucketType
 from nextcord.utils import find
 import datetime
 from pymongo import MongoClient
-from replies import workReplies, crimeReplies, slutReplies
+from .utils.replies import workReplies, crimeReplies, slutReplies
 
 # ------------------------------- #
 ''' Cluster '''
@@ -21,6 +21,15 @@ from replies import workReplies, crimeReplies, slutReplies
 cluster = MongoClient("mongodb+srv://Cosmo:1H1uqPGjo5CjtHQe@eco.5afje.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 database = cluster["Discord"]
 eco = database["Economy"]
+collectdb = database["Collect"]
+
+def numformat(num):
+    num = float('{:.3g}'.format(num))
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+    return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
 
 # ------------------------------- #
 ''' Setup '''
@@ -32,72 +41,187 @@ class Income(commands.Cog):
         self.client = client
 
     @commands.command()
-    @commands.cooldown(1, 21600, BucketType.user)
+    #@commands.cooldown(1, 21600, BucketType.user)
     async def collect(self, ctx):
         
+        x = False
         Economy = eco.find_one({"memberid":ctx.author.id})
         bal = Economy["bal"]
-
-        # 1.5x Collect Boost
-        amulet = find(lambda r: r.name == "⚜️ Gryphon's Delirium", ctx.message.guild.roles)
-
-        embed = discord.Embed(
-            description = "",
-            colour = discord.Colour.from_rgb(0, 208, 255)
-        )
-
-        embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
-        embed.timestamp = datetime.datetime.utcnow()
-
-        total = 0
-
-        apprentice = find(lambda r: r.name == "[I] Apprentice", ctx.message.guild.roles)
-        legend = find(lambda r: r.name == "[II] Legend", ctx.message.guild.roles)
-        guardian = find(lambda r: r.name == "[III] Guardian", ctx.message.guild.roles)
-        elder = find(lambda r: r.name == "[IV] Elder", ctx.message.guild.roles)
-        heroic = find(lambda r: r.name == "[V] Heroic", ctx.message.guild.roles)
-        overlord = find(lambda r: r.name == "[VI] Overlord", ctx.message.guild.roles)
-        daunter = find(lambda r: r.name == "[VII] Daunter", ctx.message.guild.roles)
-
-        if apprentice in ctx.author.roles:
-            total += 5000
-            embed.description += f"\n{apprentice.mention} - :gem: 5,000"
-
-        if legend in ctx.author.roles:
-            total += 25000
-            embed.description += f"\n{legend.mention} - :gem: 25,000"
         
-        if guardian in ctx.author.roles:
-            total += 100000
-            embed.description += f"\n{guardian.mention} - :gem: 100,000"
+        try:
 
-        if elder in ctx.author.roles:
-            total += 375000
-            embed.description += f"\n{elder.mention} - :gem: 375,000"
+            collect = collectdb.find_one({"memberid":ctx.author.id})
+            can_collect_in = collect["can_collect_in"]
 
-        if heroic in ctx.author.roles:
-            total += 500000
-            embed.description += f"\n{heroic.mention} - :gem: 500,000"
+            # User collected
+            if can_collect_in <= int(datetime.datetime.now().timestamp()):
+                amulet = find(lambda r: r.name == "⚜️ Gryphon's Delirium", ctx.message.guild.roles)
+                dimensional = find(lambda r: r.name == "🔮 Dimensional Amulet", ctx.message.guild.roles)
 
-        if overlord in ctx.author.roles:
-            total += 1500000
-            embed.description += f"\n{overlord.mention} - :gem: 1,500,000"
+                embed = discord.Embed(
+                    description = "",
+                    colour = discord.Colour.from_rgb(0, 208, 255)
+                )
 
-        if daunter in ctx.author.roles:
-            total += 3500000
-            embed.description += f"\n{daunter.mention} - :gem: 3,500,000"
+                embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+                embed.timestamp = datetime.datetime.utcnow()
 
-        if amulet in ctx.author.roles:
-            total = total * 1.5
+                total = 0
 
-        embed.description += f"\n\n**Total Collected**: {total:,}"
-        newMoney = bal + total
-        eco.update_one({"memberid":ctx.author.id},{"$set":{"bal": newMoney}})
-        await ctx.send(embed=embed)
+                apprentice = find(lambda r: r.name == "[I] Apprentice", ctx.message.guild.roles)
+                legend = find(lambda r: r.name == "[II] Legend", ctx.message.guild.roles)
+                guardian = find(lambda r: r.name == "[III] Guardian", ctx.message.guild.roles)
+                elder = find(lambda r: r.name == "[IV] Elder", ctx.message.guild.roles)
+                heroic = find(lambda r: r.name == "[V] Heroic", ctx.message.guild.roles)
+                overlord = find(lambda r: r.name == "[VI] Overlord", ctx.message.guild.roles)
+                daunter = find(lambda r: r.name == "[VII] Daunter", ctx.message.guild.roles)
+                magician = find(lambda r: r.name == "[VIII] Magician", ctx.message.guild.roles)
+                spirit = find(lambda r: r.name == "[IX] Spirit", ctx.message.guild.roles)
+                divine = find(lambda r: r.name == "[X] Divine", ctx.message.guild.roles)
+
+                if apprentice in ctx.author.roles:
+                    total += 5000
+                    embed.description += f"\n{apprentice.mention} - :gem: 5,000"
+
+                if legend in ctx.author.roles:
+                    total += 25000
+                    embed.description += f"\n{legend.mention} - :gem: 25,000"
+                
+                if guardian in ctx.author.roles:
+                    total += 100000
+                    embed.description += f"\n{guardian.mention} - :gem: 100,000"
+
+                if elder in ctx.author.roles:
+                    total += 375000
+                    embed.description += f"\n{elder.mention} - :gem: 375,000"
+
+                if heroic in ctx.author.roles:
+                    total += 500000
+                    embed.description += f"\n{heroic.mention} - :gem: 500,000"
+
+                if overlord in ctx.author.roles:
+                    total += 3000000
+                    embed.description += f"\n{overlord.mention} - :gem: 3,000,000"
+
+                if daunter in ctx.author.roles:
+                    total += 7500000
+                    embed.description += f"\n{daunter.mention} - :gem: 7,500,000"
+                
+                if magician in ctx.author.roles:
+                    total += 15000000
+                    embed.description += f"\n{magician.mention} - :gem: 15,000,000"
+
+                if spirit in ctx.author.roles:
+                    total += 25000000
+                    embed.description += f"\n{spirit.mention} - :gem: 25,000,000"
+
+                if divine in ctx.author.roles:
+                    total += 50000000
+                    embed.description += f"\n{divine.mention} - :gem: 50,000,000"
+
+                if amulet in ctx.author.roles or dimensional in ctx.author.roles:
+                    total = int(round(total * 1.5))
+
+                embed.description += f"\n\n**Total Collected**: :gem: {numformat(total)}"
+                newMoney = bal + total
+                eco.update_one({"memberid":ctx.author.id},{"$set":{"bal": newMoney}})
+                collectdb.update_one({"memberid":ctx.author.id},{"$set":{"can_collect_in":datetime.datetime.now().timestamp() + int(1*21600)}})
+                await ctx.reply(embed=embed,mention_author=False)
+
+            # User cooldown has passed
+            else:
+
+                embed = discord.Embed(
+                    description = f"You're on cooldown! You can only collect again <t:{int(can_collect_in)}:R>.",
+                    colour = discord.Colour.from_rgb(0, 208, 255)
+                )
+
+                embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+                embed.timestamp = datetime.datetime.utcnow()
+                await ctx.reply(embed=embed,mention_author=False)
+
+        # last_collect = 0; Can Collect
+        except:
+            collectdb.insert_one({
+                "memberid":ctx.author.id,
+                "can_collect_in":datetime.datetime.now().timestamp() + int(1*21600)
+            })
+
+            amulet = find(lambda r: r.name == "⚜️ Gryphon's Delirium", ctx.message.guild.roles)
+            dimensional = find(lambda r: r.name == "🔮 Dimensional Amulet", ctx.message.guild.roles)
+
+            embed = discord.Embed(
+                description = "",
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+
+            embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+            embed.timestamp = datetime.datetime.utcnow()
+
+            total = 0
+
+            apprentice = find(lambda r: r.name == "[I] Apprentice", ctx.message.guild.roles)
+            legend = find(lambda r: r.name == "[II] Legend", ctx.message.guild.roles)
+            guardian = find(lambda r: r.name == "[III] Guardian", ctx.message.guild.roles)
+            elder = find(lambda r: r.name == "[IV] Elder", ctx.message.guild.roles)
+            heroic = find(lambda r: r.name == "[V] Heroic", ctx.message.guild.roles)
+            overlord = find(lambda r: r.name == "[VI] Overlord", ctx.message.guild.roles)
+            daunter = find(lambda r: r.name == "[VII] Daunter", ctx.message.guild.roles)
+            magician = find(lambda r: r.name == "[VIII] Magician", ctx.message.guild.roles)
+            spirit = find(lambda r: r.name == "[IX] Spirit", ctx.message.guild.roles)
+            divine = find(lambda r: r.name == "[X] Divine", ctx.message.guild.roles)
+
+            if apprentice in ctx.author.roles:
+                total += 5000
+                embed.description += f"\n{apprentice.mention} - :gem: 5,000"
+
+            if legend in ctx.author.roles:
+                total += 25000
+                embed.description += f"\n{legend.mention} - :gem: 25,000"
+            
+            if guardian in ctx.author.roles:
+                total += 100000
+                embed.description += f"\n{guardian.mention} - :gem: 100,000"
+
+            if elder in ctx.author.roles:
+                total += 375000
+                embed.description += f"\n{elder.mention} - :gem: 375,000"
+
+            if heroic in ctx.author.roles:
+                total += 500000
+                embed.description += f"\n{heroic.mention} - :gem: 500,000"
+
+            if overlord in ctx.author.roles:
+                total += 3000000
+                embed.description += f"\n{overlord.mention} - :gem: 3,000,000"
+
+            if daunter in ctx.author.roles:
+                total += 7500000
+                embed.description += f"\n{daunter.mention} - :gem: 7,500,000"
+            
+            if magician in ctx.author.roles:
+                total += 15000000
+                embed.description += f"\n{magician.mention} - :gem: 15,000,000"
+
+            if spirit in ctx.author.roles:
+                total += 25000000
+                embed.description += f"\n{spirit.mention} - :gem: 25,000,000"
+
+            if divine in ctx.author.roles:
+                total += 50000000
+                embed.description += f"\n{divine.mention} - :gem: 50,000,000"
+
+            if amulet in ctx.author.roles or dimensional in ctx.author.roles:
+                total = int(round(total * 1.5))
+
+            embed.description += f"\n\n**Total Collected**: :gem: {numformat(total)}"
+            newMoney = bal + total
+            eco.update_one({"memberid":ctx.author.id},{"$set":{"bal": newMoney}})
+            await ctx.send(embed=embed)
 
     @commands.command()
     @commands.cooldown(1, 10, BucketType.user)
-    async def work(self, ctx):
+    async def old_work(self, ctx):
 
         replyMsg = ""
 
@@ -112,6 +236,7 @@ class Income(commands.Cog):
 
         # Rank Multi Work
         rankmulti = 1
+        amulet_multi = 1
         
         if find(lambda r: r.name == "[I] Apprentice", ctx.message.guild.roles) in ctx.author.roles:
             rankmulti = 2
@@ -134,11 +259,25 @@ class Income(commands.Cog):
         if (find(lambda r: r.name == "[VII] Daunter", ctx.message.guild.roles)) in ctx.author.roles:
             rankmulti = 8
 
-        amount = random.randint(round(min_val*rankmulti*global_multi), round(max_val*rankmulti*global_multi))
+        if (find(lambda r: r.name == "[VIII] Magician", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 10
+
+        if (find(lambda r: r.name == "[IX] Spirit", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 12
+
+        if (find(lambda r: r.name == "[X] Divine", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 15
 
         amulet = find(lambda r: r.name == "⚜️ Gryphon's Delirium", ctx.message.guild.roles)
+        dimensional = find(lambda r: r.name == "🔮 Dimensional Amulet", ctx.message.guild.roles)
+
         if amulet in ctx.author.roles:
-            amount = round(amount * 1.5)
+            amulet_multi = 1.5
+        
+        if dimensional in ctx.author.roles:
+            amulet_multi = 3
+
+        amount = random.randint(round(min_val*rankmulti*global_multi*amulet_multi), round(max_val*rankmulti*global_multi*amulet_multi))
 
         newMoney = money + amount
         eco.update_one({"memberid":id},{"$set":{"bal": newMoney}})
@@ -182,6 +321,7 @@ class Income(commands.Cog):
 
         # Rank Multi Work
         rankmulti = 1
+        amulet_multi = 1
         
         if find(lambda r: r.name == "[I] Apprentice", ctx.message.guild.roles) in ctx.author.roles:
             rankmulti = 2
@@ -204,11 +344,25 @@ class Income(commands.Cog):
         if (find(lambda r: r.name == "[VII] Daunter", ctx.message.guild.roles)) in ctx.author.roles:
             rankmulti = 8
 
-        amount = random.randint(round(min_val*rankmulti*global_multi), round(max_val*rankmulti*global_multi))
+        if (find(lambda r: r.name == "[VIII] Magician", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 10
+
+        if (find(lambda r: r.name == "[IX] Spirit", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 12
+
+        if (find(lambda r: r.name == "[X] Divine", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 15
 
         amulet = find(lambda r: r.name == "⚜️ Gryphon's Delirium", ctx.message.guild.roles)
+        dimensional = find(lambda r: r.name == "🔮 Dimensional Amulet", ctx.message.guild.roles)
+
         if amulet in ctx.author.roles:
-            amount = round(amount * 1.5)
+            amulet_multi = 1.5
+        
+        if dimensional in ctx.author.roles:
+            amulet_multi = 3
+
+        amount = random.randint(round(min_val*rankmulti*global_multi*amulet_multi), round(max_val*rankmulti*global_multi*amulet_multi))
 
         newMoney = money + amount
         eco.update_one({"memberid":id},{"$set":{"bal": newMoney}})
@@ -242,6 +396,7 @@ class Income(commands.Cog):
 
         # Rank Multi Work
         rankmulti = 1
+        amulet_multi = 1
         
         if find(lambda r: r.name == "[I] Apprentice", ctx.message.guild.roles) in ctx.author.roles:
             rankmulti = 2
@@ -264,11 +419,25 @@ class Income(commands.Cog):
         if (find(lambda r: r.name == "[VII] Daunter", ctx.message.guild.roles)) in ctx.author.roles:
             rankmulti = 8
 
-        amount = random.randint(round(min_val*rankmulti*global_multi), round(max_val*rankmulti*global_multi))
+        if (find(lambda r: r.name == "[VIII] Magician", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 10
+
+        if (find(lambda r: r.name == "[IX] Spirit", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 12
+
+        if (find(lambda r: r.name == "[X] Divine", ctx.message.guild.roles)) in ctx.author.roles:
+            rankmulti = 15
 
         amulet = find(lambda r: r.name == "⚜️ Gryphon's Delirium", ctx.message.guild.roles)
+        dimensional = find(lambda r: r.name == "🔮 Dimensional Amulet", ctx.message.guild.roles)
+
         if amulet in ctx.author.roles:
-            amount = round(amount * 1.5)
+            amulet_multi = 1.5
+        
+        if dimensional in ctx.author.roles:
+            amulet_multi = 3
+
+        amount = random.randint(round(min_val*rankmulti*global_multi*amulet_multi), round(max_val*rankmulti*global_multi*amulet_multi))
 
         newMoney = money + amount
         eco.update_one({"memberid":id},{"$set":{"bal": newMoney}})
@@ -286,14 +455,16 @@ class Income(commands.Cog):
         await ctx.reply(embed=embed, mention_author=False)
 
     @commands.command()
-    async def bal(self, ctx, user:discord.Member=None):
+    async def bal(self, ctx, user: discord.Member=None):
 
         if user is None:
             id = ctx.author.id
-            name = ctx.author.name
+            name = ctx.author
+            av = ctx.author.display_avatar
         else:
             id = user.id
-            name = user.name
+            name = user
+            av = user.display_avatar
 
 
         Economy = eco.find_one({"memberid":id})
@@ -302,7 +473,7 @@ class Income(commands.Cog):
         embed = discord.Embed(
             colour = discord.Colour.from_rgb(0, 208, 255),
         )
-        embed.add_field(name="Balance", value=f":gem: {bal:,}", inline=True)
+        embed.add_field(name="Balance", value=f":gem: {numformat(bal)} ({bal:,})", inline=True)
         embed.add_field(name="<:transparent:911319446918955089>", value="<:transparent:911319446918955089>", inline=True)
 
         i = 1
@@ -318,7 +489,8 @@ class Income(commands.Cog):
             if i == 11:
                 break
 
-        embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+
+        embed.set_author(name=name, icon_url=av)
         embed.timestamp = datetime.datetime.utcnow()
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -401,77 +573,6 @@ class Income(commands.Cog):
                 em.timestamp = datetime.datetime.utcnow()
                 await ctx.reply(embed=em)
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def desc(self, ctx, *, text):
-
-        id = ctx.author.id
-        name = ctx.author.name
-
-        try:
-
-            eco.update_one({"memberid":id},{"$set":{"profileDesc": text}})
-            em = discord.Embed(
-                title = "Profile Updated!",
-                description = f"Your profile description has been updated! You can do `>profile` to view it!",
-                colour = discord.Colour.from_rgb(75, 255, 75)
-            )
-            em.timestamp = datetime.datetime.utcnow()
-            await ctx.reply(embed=em)
-
-        except:
-            em = discord.Embed(
-                title = "Profile Error",
-                description = f"You do not have an active profile, please do `>profile` to create one.",
-                colour = discord.Colour.from_rgb(255, 75, 75)
-            )
-            em.timestamp = datetime.datetime.utcnow()
-            await ctx.reply(embed=em)
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def profile(self, ctx, user: discord.Member=None):
-
-        if user is None:
-            id = ctx.author.id
-            name = ctx.author.name
-            av = ctx.author.avatar.url
-        else:
-            id = user.id
-            name = user.name
-            av = user.avatar.url
-
-        if eco.count_documents({"memberid":id}) == 0:
-            eco.insert_one(
-            {
-            "memberid":id,
-            "bal":0,
-            "totalBossKills":0,
-            "profileDesc":"None Set",
-            "title":"None",
-            "currentQuest":"Merlin1",
-            "questObjectiveCounter":0,
-            "cfWinStreak":0,
-            })
-
-        Economy = eco.find_one({"memberid":id})
-        money = Economy["bal"]
-        bossesKilled = Economy["totalBossKills"]
-        desc = Economy["profileDesc"]
-        title = Economy["title"]
-
-        embed = discord.Embed(
-            title = f"{name}'s Profile",
-            colour = discord.Colour.from_rgb(0, 208, 255),
-        )
-
-        embed.add_field(name="Description", value=desc, inline=False)
-        embed.add_field(name="Titles", value=title, inline=False)
-        embed.add_field(name="Balance", value=f":gem: {money:,}", inline=True)
-        embed.add_field(name="Bosses Killed", value=bossesKilled, inline=True)
-        embed.set_thumbnail(url=av)
-        await ctx.send(embed=embed)
-
     @commands.command(aliases = ["give", "pay", "paymoney"])
     async def givemoney(self, ctx, user: discord.Member, amt):
 
@@ -482,10 +583,13 @@ class Income(commands.Cog):
         receiver_bal = receiver["bal"]
 
         if amt == "all":
-            amt = donator_bal
+            amt = int(donator_bal)
+
+        elif amt == "0":
+            return
 
         elif amt == "half":
-            amt = donator_bal/2
+            amt = int(donator_bal/2)
 
         elif "e" in amt:
 
@@ -506,6 +610,31 @@ class Income(commands.Cog):
         else:
             amt = int(amt)
 
+        if amt < 0:
+            em = discord.Embed(
+                description = ":x: Please provide a positive number!",
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+
+            em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.datetime.utcnow()
+            return await ctx.send(embed=em)
+
+        amt = abs(amt)
+        if amt == None:
+
+            em = discord.Embed(
+                description = ":x: Not enough arguments given!\n\nUsage:\n`bj <bet>`",
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+
+            em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.datetime.utcnow()
+            return await ctx.send(embed=em)
+
+        if amt == 0:
+            return
+
         if donator_bal >= amt:
 
 
@@ -524,61 +653,6 @@ class Income(commands.Cog):
             em.timestamp = datetime.datetime.utcnow()
             em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
             await ctx.send(embed=em)
-
-    @commands.command()
-    async def lb(self, ctx, _type=None):
-
-        i = 1
-        embed = discord.Embed(
-            description = "Gems can be used to buy different items and ranks from `>shop`.\n",
-            colour = discord.Colour.from_rgb(0, 208, 255)
-        )
-
-        if _type is None:
-
-            rankings = eco.find().sort("bal",-1)
-            for x in rankings:
-                try:
-                    temp = ctx.guild.get_member(x["memberid"])
-                    bal = x["bal"]
-                    #embed.add_field(name=f"`[#{i}]` {temp.name}", value=f":gem: {bal:,}", inline=False)
-
-                    if temp.id == ctx.author.id:
-                        embed.set_footer(text=f"Your Rank: {i}/{len(ctx.guild.members)}")
-
-                    if i in [1, 2, 3]:
-                        embed.description += f"\n**#{i}.** {temp.mention} - :gem: {bal:,}\n<:transparent:911319446918955089>"
-                    elif i == 10:
-                        embed.description += f"\n#{i}. {temp.mention} - :gem: {bal:,}"
-                    else:
-                        embed.description += f"\n#{i}. {temp.mention} - :gem: {bal:,}\n<:transparent:911319446918955089>"
-                    i += 1
-                except:
-                    pass
-                if i == 11:
-                    break
-
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name="Gem Leaderboard", icon_url=ctx.guild.icon.url) 
-            await ctx.send(embed=embed)
-
-        if _type == "kills":
-
-            rankings = eco.find().sort("totalBossKills",-1)
-            for x in rankings:
-                try:
-                    temp = ctx.guild.get_member(x["memberid"])
-                    kills = x["totalBossKills"]
-                    embed.add_field(name=f"`[#{i}]` {temp.name}", value=f"{kills:,}", inline=False)
-                    i += 1
-                except:
-                    pass
-                if i == 11:
-                    break
-
-            embed.timestamp = datetime.datetime.utcnow()
-            embed.set_thumbnail(url=ctx.guild.icon.url)
-            await ctx.send(embed=embed)
 
     @commands.command(aliases = ["ecostats", "economystats"])
     async def serverstats(self, ctx):

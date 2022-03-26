@@ -1,21 +1,19 @@
 from keep_alive import keep_alive
-import asyncio
-import time
 import nextcord as discord
-import random
 import datetime
 import os
-from nextcord.ext import commands, tasks
-from nextcord.ext.commands import BucketType
+from nextcord.ext import commands
 import aiohttp
+import jishaku
+
+GUILD_ID = 581139467381768192
 
 version = "v1.51"
 latest_update = "> New Admin Commands\n> Bi & Les rate commands."
 timeNow = datetime.datetime.utcnow()
 
-# vortexRGB = (0, 155, 180)
-# Emoji Format = <: name :     id           >
-# Emoji Format = <:stonks:713292086954295296>
+# vortex
+# Format = <:stonks:713292086954295296>
 
 client = commands.Bot(command_prefix=['!', '>'], case_sensitive=False, intents=discord.Intents.all())
 client.sniped = None
@@ -37,19 +35,6 @@ async def snipe(ctx: commands.Context):
     em.timestamp = datetime.datetime.utcnow()
     await ctx.reply(embed=em)
 
-@client.command()
-@commands.is_owner()
-async def reload(ctx, extension):
-    client.reload_extension(f"cogs.{extension}")
-    embed = discord.Embed(title='Reload', description=f'{extension} successfully reloaded', colour = discord.Colour.from_rgb(255, 75, 75))
-    await ctx.send(embed=embed)
-
-@client.command()
-@commands.is_owner()
-async def quit(ctx):
-    await ctx.send("Shutting down the bot")
-    return await client.close() # this just shuts down the bot.
-
 ##
 @client.command()
 async def load(ctx, extension):
@@ -60,34 +45,19 @@ async def unload(ctx, extension):
   client.unload_extension(f'cogs.{extension}')
 
 for filename in os.listdir('./cogs'):
-  if filename.endswith('.py'):
-    client.load_extension(f'cogs.{filename[:-3]}')
 
-@client.command()
-@commands.cooldown(1, 3600, BucketType.user)
-async def collecttest(ctx):
+    if filename.endswith('.py'):
+        client.load_extension(f'cogs.{filename[:-3]}')
 
-    await ctx.send("Collected!")
+client.load_extension('jishaku')
+os.environ["JISHAKU_EMBEDDED_JSK_COLOUR"] = "0x00d0ff"
+os.environ.setdefault("JISHAKU_NO_UNDERSCORE", "1")
+os.environ.setdefault("JISHAKU_HIDE", "0")
 
-@client.command()
-async def meme(ctx):
-    async with aiohttp.ClientSession() as cs:
-        async with cs.get("https://some-random-api.ml/meme") as r:
-            memes = await r.json()
-            embed = discord.Embed(
-                title = memes["caption"],
-                colour = discord.Colour.random()
-            )
-            embed.set_image(url=memes["image"])
-            embed.set_footer(text=f'Random Meme Requested by {ctx.author}')
-            await ctx.send(embed=embed)
-
-#client.load_extension('jishaku')
 keep_alive()
 token = os.environ['token']
 
 if __name__ == "__main__":
-    client.run(token)
     async def startup():
         client.session = aiohttp.ClientSession()
 

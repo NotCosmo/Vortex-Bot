@@ -21,6 +21,125 @@ cluster = MongoClient("mongodb+srv://Cosmo:1H1uqPGjo5CjtHQe@eco.5afje.mongodb.ne
 database = cluster["Discord"]
 eco = database["Economy"]
 
+class BJ(discord.ui.View):
+    def __init__(self, bet, user_money, me, dealer):
+        super().__init__()
+        self.bet = bet
+        self.user_money = user_money
+        self.me = me
+        self.dealer = dealer
+
+    @discord.ui.button(label='Hit', style=discord.ButtonStyle.blurple)
+    async def hit(self, button, interaction):
+
+        await interaction.response.defer()
+
+        import random
+
+        rng = random.randint(3, 7)
+
+        self.me += rng
+
+        if self.me > 21:
+            em = discord.Embed(description=f"Result: Lost :gem: {self.bet:,}.",colour=discord.Colour.from_rgb(255, 75, 75))
+            em.set_author(name=interaction.author,icon_url=interaction.author.display_avatar)
+            em.add_field(name="Your Hand",value=self.me,inline=True)
+            em.add_field(name="Dealer Hand",value=self.dealer,inline=True)
+            em.timestamp = datetime.datetime.utcnow()
+
+            await interaction.edit_original_message(
+                embed=em
+                #content=f'You: {self.me}\nDealer: {self.dealer}\n\nYou lost!'
+            )
+            self.stand.disabled = True
+            self.hit.disabled = True
+            await interaction.edit_original_message(view=self)
+            updateMoney = self.user_money - self.bet
+            eco.update_one({"memberid":interaction.author.id},{"$set":{"bal": updateMoney}})
+            return
+
+        if self.me == 21:
+            em = discord.Embed(description=f"Result: Won :gem: {self.bet:,}.",colour=discord.Colour.from_rgb(75, 255, 75))
+            em.set_author(name=interaction.author,icon_url=interaction.author.display_avatar)
+            em.add_field(name="Your Hand",value=self.me,inline=True)
+            em.add_field(name="Dealer Hand",value=self.dealer,inline=True)
+            em.timestamp = datetime.datetime.utcnow()
+
+            await interaction.edit_original_message(
+                embed=em
+            )
+            self.stand.disabled = True
+            self.hit.disabled = True
+            await interaction.edit_original_message(view=self)
+            updateMoney = self.user_money + self.bet
+            eco.update_one({"memberid":interaction.author.id},{"$set":{"bal": updateMoney}})
+            return
+
+        else:
+            em = discord.Embed(description=f"Bet: :gem: {self.bet:,}.",colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name=interaction.author,icon_url=interaction.author.display_avatar)
+            em.add_field(name="Your Hand",value=self.me,inline=True)
+            em.add_field(name="Dealer Hand",value=self.dealer,inline=True)
+            em.timestamp = datetime.datetime.utcnow()
+
+            await interaction.edit_original_message(
+                embed=em
+            )
+            return
+
+    @discord.ui.button(label='Stand', style=discord.ButtonStyle.blurple)
+    async def stand(self, button, interaction):
+
+        await interaction.response.defer()
+        rng = random.randint(3, 7)
+
+        self.dealer += rng
+
+        if self.dealer > 21:
+            em = discord.Embed(description=f"Result: Won :gem: {self.bet:,}.",colour=discord.Colour.from_rgb(75, 255, 75))
+            em.set_author(name=interaction.author,icon_url=interaction.author.display_avatar)
+            em.add_field(name="Your Hand",value=self.me,inline=True)
+            em.add_field(name="Dealer Hand",value=self.dealer,inline=True)
+            em.timestamp = datetime.datetime.utcnow()
+
+            await interaction.edit_original_message(
+                embed=em
+            )
+            self.stand.disabled = True
+            self.hit.disabled = True
+            await interaction.edit_original_message(view=self)
+            updateMoney = self.user_money + self.bet
+            eco.update_one({"memberid":interaction.author.id},{"$set":{"bal": updateMoney}})
+            return
+
+        if self.dealer == 21:
+            em = discord.Embed(description=f"Result: Lost :gem: {self.bet:,}",colour=discord.Colour.from_rgb(255, 75, 75))
+            em.set_author(name=interaction.author,icon_url=interaction.author.display_avatar)
+            em.add_field(name="Your Hand",value=self.me,inline=True)
+            em.add_field(name="Dealer Hand",value=self.dealer,inline=True)
+            em.timestamp = datetime.datetime.utcnow()
+
+            await interaction.edit_original_message(
+                embed=em
+            )
+            self.stand.disabled = True
+            self.hit.disabled = True
+            await interaction.edit_original_message(view=self)
+            updateMoney = self.user_money - self.bet
+            eco.update_one({"memberid":interaction.author.id},{"$set":{"bal": updateMoney}})
+            return
+
+        else:
+            em = discord.Embed(description=f"Bet: :gem: {self.bet:,}.",colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name=interaction.author,icon_url=interaction.author.display_avatar)
+            em.add_field(name="Your Hand",value=self.me,inline=True)
+            em.add_field(name="Dealer Hand",value=self.dealer,inline=True)
+            em.timestamp = datetime.datetime.utcnow()
+
+            return await interaction.edit_original_message(
+                embed=em
+            )
+
 # ------------------------------- #
 ''' Setup '''
 # ------------------------------- #
@@ -31,30 +150,8 @@ class EcoGames(commands.Cog):
         self.client = client
 
     @commands.command()
-    async def wtf(self, ctx, bet: int):
-
-        chance = random.randint(1, 100)
-
-        if chance == 1:
-
-            return await ctx.send(f"You lost {bet}! (**1%** Chance)")
-
-        is_between = chance in range(2, 31)
-
-        if is_between == True:
-
-            newBet = bet + ((20/100) * bet)
-
-            return await ctx.send(f"You won 20% of {bet}, total is now {newBet}!")
-
-        else:
-            
-            newBet = bet + ((10/100) * bet)
-            return await ctx.send(f"You lost 10% of your bal, total is now {newBet}")
-
-    @commands.command()
     async def dice(self, ctx, bet=None):
-        
+
         id = ctx.author.id
 
         if eco.count_documents({"memberid":id}) == 0:
@@ -88,6 +185,21 @@ class EcoGames(commands.Cog):
                 _string += x
                 bet = int(_string)
 
+        else:
+
+            bet = int(bet)
+
+        if bet < 0:
+            em = discord.Embed(
+                description = ":no_entry_sign: Please provide a positive number!",
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+
+            em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.datetime.utcnow()
+            return await ctx.send(embed=em)
+
+        bet = abs(bet)
         if bet == None:
 
             em = discord.Embed(
@@ -98,9 +210,6 @@ class EcoGames(commands.Cog):
             em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
             em.timestamp = datetime.datetime.utcnow()
             return await ctx.send(embed=em)
-
-        else:
-            bet = int(bet)
 
         if bet == 0:
             return
@@ -213,10 +322,13 @@ class EcoGames(commands.Cog):
                 _string += x
                 bet = int(_string)
 
-        if bet == None:
+        else:
 
+            bet = int(bet)
+
+        if bet < 0:
             em = discord.Embed(
-                description = ":x: Not enough arguments given!\n\nUsage:\n`slots <bet>`",
+                description = ":x: Please provide a positive number!",
                 colour = discord.Colour.from_rgb(0, 208, 255)
             )
 
@@ -224,8 +336,18 @@ class EcoGames(commands.Cog):
             em.timestamp = datetime.datetime.utcnow()
             return await ctx.send(embed=em)
 
-        else:
-            bet = int(bet)
+        bet = abs(bet)
+        if bet == None:
+
+            em = discord.Embed(
+                description = ":no_entry_sign: Not enough arguments given!\n\nUsage:\n`slots <bet>`",
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+
+            em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.datetime.utcnow()
+            return await ctx.send(embed=em)
+
 
         if bet == 0:
             return
@@ -318,13 +440,6 @@ class EcoGames(commands.Cog):
             embed.timestamp = datetime.datetime.utcnow()
             await ctx.send(embed=embed)
 
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def b(self, ctx):
-
-        eco.update_one({"memberid":455971566199767040},{"$set":{"bal": 100}})
-
     @commands.command()
     async def cf(self, ctx, bet=None):
 
@@ -336,6 +451,7 @@ class EcoGames(commands.Cog):
         Economy = eco.find_one({"memberid":id})
         money = Economy["bal"]
         ws = Economy["cfWinStreak"]
+
 
         if bet == "all":
             bet = int(money)
@@ -351,7 +467,7 @@ class EcoGames(commands.Cog):
             string = bet.split("e")
             num = string[0]
             exponent = string[1]
-            
+                
             bet = int(num) * (10 ** int(exponent))
 
         elif "," in bet:
@@ -362,10 +478,13 @@ class EcoGames(commands.Cog):
                 _string += x
                 bet = int(_string)
 
-        if bet == None:
+        else:
 
+            bet = int(bet)
+
+        if bet < 0:
             em = discord.Embed(
-                description = ":x: Not enough arguments given!\n\nUsage:\n`cf <bet>`",
+                description = ":x: Please provide a positive number!",
                 colour = discord.Colour.from_rgb(0, 208, 255)
             )
 
@@ -373,17 +492,24 @@ class EcoGames(commands.Cog):
             em.timestamp = datetime.datetime.utcnow()
             return await ctx.send(embed=em)
 
-        else:
+        bet = abs(bet)
+        if bet == None:
 
-            bet = int(bet)
+            em = discord.Embed(
+                description = ":no_entry_sign: Not enough arguments given!\n\nUsage:\n`cf <bet>`",
+                colour = discord.Colour.from_rgb(0, 208, 255)
+            )
+
+            em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.datetime.utcnow()
+            return await ctx.send(embed=em)
 
         if bet == 0:
             return
         
         _chance = random.randint(1, 100)
         percentChance = 50 + ws
-
-        winChance = _chance in range(1, percentChance)
+        winChance = _chance in range(percentChance, 100)
 
         if bet <= money:
             
@@ -392,6 +518,7 @@ class EcoGames(commands.Cog):
                 ws += 1
 
                 updateMoney = money + bet
+                percentChance = 50 + ws
 
                 eco.update_one({"memberid":id},{"$set":{"bal": updateMoney}})
                 eco.update_one({"memberid":id},{"$set":{"cfWinStreak": ws}})
@@ -400,7 +527,7 @@ class EcoGames(commands.Cog):
                     description = f"You just made :gem: {int(bet):,}!",
                     colour = discord.Colour.green()
                 )
-                embed.set_author(name=f"Cockfight", icon_url=ctx.author.avatar.url)
+                embed.set_author(name=f"Cockfight", icon_url=ctx.author.display_avatar)
                 embed.set_footer(text=f"Win Chance: {percentChance}%")
                 embed.timestamp = datetime.datetime.utcnow()
                 await ctx.reply(embed=embed)
@@ -414,7 +541,7 @@ class EcoGames(commands.Cog):
                     colour = discord.Colour.red()
                 )
 
-                embed.set_author(name=f"Cockfight", icon_url=ctx.author.avatar.url)
+                embed.set_author(name=f"Cockfight", icon_url=ctx.author.display_avatar)
                 embed.set_footer(text=f"Lost {ws} win streak!")
                 embed.timestamp = datetime.datetime.utcnow()
                 await ctx.reply(embed=embed)
@@ -429,7 +556,7 @@ class EcoGames(commands.Cog):
                 colour = discord.Colour.red()
             )
 
-            embed.set_author(name=f"Cockfight", icon_url=ctx.author.avatar.url)
+            embed.set_author(name=f"Cockfight", icon_url=ctx.author.display_avatar)
             embed.timestamp = datetime.datetime.utcnow()
             await ctx.reply(embed=embed)
 
