@@ -42,7 +42,7 @@ class Income(commands.Cog):
 
     @commands.command()
     #@commands.cooldown(1, 21600, BucketType.user)
-    async def collect(self, ctx):
+    async def acollect(self, ctx):
         
         x = False
         Economy = eco.find_one({"memberid":ctx.author.id})
@@ -300,13 +300,13 @@ class Income(commands.Cog):
         await ctx.reply(embed=embed, mention_author=False)
 
     @commands.command()
-    async def reset(self, ctx):
+    async def areset(self, ctx):
 
         eco.update_one({"memberid":ctx.author.id},{"$set":{"bal": 0}})
 
     @commands.command()
     @commands.cooldown(1, 10, BucketType.user)
-    async def crime(self, ctx):
+    async def acrime(self, ctx):
 
         replyMsg = ""
 
@@ -381,7 +381,7 @@ class Income(commands.Cog):
 
     @commands.command()
     @commands.cooldown(1, 10, BucketType.user)
-    async def slut(self, ctx):
+    async def aslut(self, ctx):
 
         replyMsg = ""
 
@@ -455,7 +455,7 @@ class Income(commands.Cog):
         await ctx.reply(embed=embed, mention_author=False)
 
     @commands.command()
-    async def bal(self, ctx, user: discord.Member=None):
+    async def abal(self, ctx, user: discord.Member=None):
 
         if user is None:
             id = ctx.author.id
@@ -573,8 +573,8 @@ class Income(commands.Cog):
                 em.timestamp = datetime.datetime.utcnow()
                 await ctx.reply(embed=em)
 
-    @commands.command(aliases = ["give", "pay", "paymoney"])
-    async def givemoney(self, ctx, user: discord.Member, amt):
+    @commands.command()
+    async def agivemoney(self, ctx, user: discord.Member, amt):
 
         donator = eco.find_one({"memberid":ctx.author.id})
         receiver = eco.find_one({"memberid":user.id})
@@ -654,8 +654,8 @@ class Income(commands.Cog):
             em.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
             await ctx.send(embed=em)
 
-    @commands.command(aliases = ["ecostats", "economystats"])
-    async def serverstats(self, ctx):
+    @commands.command()
+    async def astats(self, ctx):
 
         i = 1
         embed = discord.Embed(

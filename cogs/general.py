@@ -95,7 +95,7 @@ class General(commands.Cog,description="General bot commands, anything from fun 
         if x == 999:
             text = 'so small that you need to have a microscope in the Quantum Realm to see it.'
             
-        if user:
+        if not user:
             embed = discord.Embed(
                 description = f"Your penis size is {text}",
                 colour = discord.Colour.from_rgb(0, 155, 180)
@@ -105,11 +105,11 @@ class General(commands.Cog,description="General bot commands, anything from fun 
             await interaction.response.send_message(embed=embed)
         else:
             embed = discord.Embed(
-                description = f"{interaction.user.mention}'s penis size is {text}",
+                description = f"{user.mention}'s penis size is {text}",
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
             embed.timestamp = datetime.datetime.utcnow()
-            embed.set_author(name=f'Penis Machine', icon_url=interaction.user.display_avatar)
+            embed.set_author(name=f'Penis Machine', icon_url=user.display_avatar)
             await interaction.response.send_message(embed=embed)
         
     #luck#--------------#
@@ -211,7 +211,7 @@ class General(commands.Cog,description="General bot commands, anything from fun 
 
         if user:
             embed = discord.Embed(
-                description = f'{i.user.mention} is {percent}% gay.',
+                description = f'{user.mention} is {percent}% gay.',
                 colour = discord.Colour.from_rgb(0, 155, 180)
             )
         else:
@@ -221,7 +221,7 @@ class General(commands.Cog,description="General bot commands, anything from fun 
             )
 
         embed.timestamp = datetime.datetime.utcnow()
-        embed.set_author(name=f'How Gay', icon_url=i.user.display_avatar)
+        embed.set_author(name=f'How Gay', icon_url=user.display_avatar)
         await i.response.send_message(embed=embed)
     
     #Racist#--------------#
@@ -470,6 +470,13 @@ class General(commands.Cog,description="General bot commands, anything from fun 
     async def poopsize(self, ctx, user: discord.Member=None):
 
         poopsizes = [
+            'OMNIVERSAL',
+            'multiversal',
+            'universal',
+            'planetary',
+            'moe level',
+            'ungodly',
+            'extremely large',
             'extra very large',
             'very Large',
             'super large',
@@ -478,6 +485,7 @@ class General(commands.Cog,description="General bot commands, anything from fun 
             'you just got into the poop industry size',
             'small',
             'super small',
+            'the planck length type small',
         ]
         size = random.choice(poopsizes)
         x = random.randint(0, 42069)

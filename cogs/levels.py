@@ -239,5 +239,70 @@ class Levels(commands.Cog):
         background.save("level.png")
         await ctx.send(file=discord.File("level.png"))
 
+    @commands.command()
+    async def baltest(self, ctx):
+
+        try:
+            data = db.find_one({"memberid":ctx.author.id})
+            user_level = data["level"]
+            xp = data["xp"]
+
+        except:
+            
+            if ctx.author.bot:
+                return
+            else:
+
+                db.insert_one(
+                {
+                "memberid":ctx.author.id,
+                "profile_name":"None",
+                "profile_desc":"None",
+                "level":1,
+                "xp":0,
+                })
+                return
+
+        user_data = {
+            "name": str(ctx.author),
+            "bio": "",
+            "level": str(user_level),
+            "xp": f"{numformat(xp)} / {numformat(levels[user_level])}",
+            "percentage": round((xp/levels[user_level])*100),
+            "title":"Season 13 Champion",
+        }
+
+
+        background = Editor(Canvas((800, 240), color="#23272A"))
+        profile_image = await load_image_async(str(ctx.author.display_avatar))
+        profile = Editor(profile_image).circle_image().resize((200, 200))
+
+
+        font_40 = Font.poppins(size=40)
+        font_20 = Font.montserrat(size=20)
+        font_25 = Font.poppins(size=25)
+        font_40_bold = Font.poppins(size=40, variant="bold")
+        bold = Font.poppins(size=40, variant="bold")
+
+        background.paste(profile, (20, 20))
+        # Username, underline and title
+        background.text((375, 30), user_data["name"], font=bold, color="white")
+        background.text((375, 80), user_data["title"], font=font_25, color="white")
+        background.rectangle((250, 70), 500, 1, outline="white", stroke_width=2)
+        #background.text((250, 170), "LVL", font=font_25, color="white")
+        #!background.text((310, 160), user_data["level"], font=font_40_bold, color="white")
+        background.text((240, 80), "Balance 💎 1.2M", font=font_20, color="white")
+        
+        background.rectangle((250, 170), 500, 25, outline="white", stroke_width=2)
+        background.bar(
+            (254, 174),500,17,
+            percentage=user_data["percentage"],
+            fill="white",
+            stroke_width=2,
+        )
+
+        background.save("level.png")
+        await ctx.send(file=discord.File("level.png"))
+
 def setup(client):
     client.add_cog(Levels(client))

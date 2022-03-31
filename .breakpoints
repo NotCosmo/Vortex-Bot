@@ -7,14 +7,6 @@
         "version": 22797,
         "index": 1314
       }
-    ],
-    "cogs/economy.py": [
-      {
-        "id": "71fe6960-7e71-4fff-8da8-58fffffdd1f7",
-        "line": 1,
-        "version": 16973,
-        "index": 0
-      }
     ]
   }
 }

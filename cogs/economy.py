@@ -1,4 +1,4 @@
-# Main Imports
+## Main Imports
 
 import nextcord as discord
 import asyncio
@@ -13,7 +13,6 @@ from datetime import datetime
 from pymongo import MongoClient
 from random import choice, randint
 from .utils.replies import workReplies, crimeReplies, slutReplies
-from .utils.utils_dict import ranks
 
 # ------------------------------- #
 ''' Cluster '''
@@ -25,299 +24,495 @@ users = database["Users"]
 collectdb = database["Collect"]
 settings = database["EcoSettings"]
 
-def numformat(num):
-    num = float('{:.3g}'.format(num))
-    magnitude = 0
-    while abs(num) >= 1000:
-        magnitude += 1
-        num /= 1000.0
-    return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
+def numformat(number):
+    if number < 1000:
+        return number
+    elif number < 1000000:
+        return "{:.2f}K".format(number / 1000)
+    elif number < 1000000000:
+        return "{:.2f}M".format(number / 1000000)
+    elif number < 1000000000000:
+        return "{:.2f}B".format(number / 1000000000)
+    elif number < 1000000000000000:
+        return "{:.2f}T".format(number / 1000000000000)
+
 
 class Economy(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-        self.userdb = users
-        self.collectdb = collectdb
-        self.settingsdb = settings
+        self.users = users
+        self.collect = collectdb
+        self.settings = settings
         self.logs_id = 814787632776609812
-    
-    async def get_rank_multi(self, ctx, user) -> None:
 
-        rankmulti = 1
-        
-        if (find(lambda r: r.name == '[I] Rank', ctx.message.guild.roles) in user.roles):
-            rankmulti = 5
-
-        return rankmulti
-
-    async def get_stat(self, stat: str, user_id: int) -> None:
-
-        # Get user object
-        user = self.userdb.find_one({"_id":user_id})
-        return user[stat]
-
-    async def get_setting(self, setting: str) -> None:
-
-        # Get settings db object
-        st = self.settingsdb.find_one({"tag":"Settings"})
-        return st[setting]
-
-    async def lb_position(self, ctx, stat: str, user_id: int) -> None:
-
-        rankings = self.userdb.find().sort(stat,-1)
-        i = 1
-
-        # Cycle through database entries
-        for entry in rankings:
-
-            try:
-                # Get user object and user bal
-                user = ctx.guild.get_member(entry["_id"])
-
-                # Check if we found user we are looking for
-                if user.id == user_id:
-                    return i
-
-                i += 1
-
-            except:
-                # Could not get user
-                pass
-
-    @commands.command()
+    # setup command, owner only
+    @commands.command(name="setup", aliases=["setup_eco"])
     @commands.is_owner()
     async def setup(self, ctx):
 
-        self.settingsdb.insert_one(
-            {
-            "tag":"Settings",
-            "currency":":gem:",
-            "work_min_value":100,
-            "work_max_value":800,
-            "slut_min_value":150,
-            "slut_max_value":850,
-            "crime_min_value":250,
-            "crime_max_value":1000,
-            "global_multiplier":1,
-            "default_cf_winchance":50,
-            "economy_disabled":False,
-            "bosses_disabled":False,
-            })
+        self.settings.insert_one({
+            "_id": "settings",
+            "currency": ":gem:",
+            "work_min": 100,
+            "work_max": 1000,
+            "work_disabled": False,
+            "crime_min": 100,
+            "crime_max": 1000,
+            "crime_disabled": False,
+            "slut_min": 100,
+            "slut_max": 1000,
+            "slut_disabled": False,
+            "global_multiplier": 1,
+            "cf_winchance": 50,
+            "bosses_disabled": True
+        })
+        await ctx.send("Done")
 
-    @commands.command(hidden=True)
-    @commands.has_permissions(administrator=True)
-    async def set(self, ctx, user: discord.Member, stat: str, new_value):
+    # get users
+    async def get_users(self) -> None:
 
-        if stat in ['bal']:
-            new_value = int(new_value)
+        users_ = self.users.find()
+        return users_
+
+    # Get and return user object
+    async def get_user(self, user: discord.Member) -> None:
+
+        user = self.users.find_one({"_id": user.id})
+        return user
+
+    # Update user object
+    async def update_user(self, user: discord.Member, data: str, new_data) -> None:
+        user_dict = await self.get_user(user)
+        user_dict[data] = new_data
+        return self.users.replace_one({"_id": user.id}, user_dict)
+
+    # Update user bal
+    async def update_bal(self, user_: discord.Member, amount: int) -> None:
+
+        user = await self.get_user(user_)
+        user["balance"] += amount
+        return self.users.replace_one({"_id": user_.id}, user)
+
+    # Get and return settings object
+    async def get_settings(self) -> None:
+
+        settings_ = self.settings.find_one({"_id": "settings"})
+        return settings_
+
+    async def set_setting(self, setting: str, value) -> None:
+
+        settings_ = await self.get_settings()
+        settings_[setting] = value
+        return self.settings.replace_one({"_id": "settings"}, settings_)
+
+    # Amount to give user (based on multis)
+    async def get_amount(self, user_: discord.Member, amount: int) -> int:
+
+        user_ = await self.get_user(user_)
+        settings_ = await self.get_settings()
+        # rank_multi = await self.get_rank_multi(user_)
+
+        return int(amount * settings_["global_multiplier"])
+
+    async def payout_multi(self, amount: int) -> int:
+
+        settings_ = await self.get_settings()
+        return int(amount * settings_["global_multiplier"])
+
+    # convert numbers like 1e10 to ints
+    async def convert_amount(self, donator, amount: str) -> int:
+
+        if amount == "0":
+            return 0
+
+        if "e" in amount:
+            _s = amount.split("e")
+            amount = int(_s[0]) * (10 ** int(_s[1]))
+
+        elif amount == "all":
+            amount = donator["balance"]
+
+        elif amount == "half":
+            amount = int(donator["balance"] / 2)
+
+        elif "," in amount:
+            _s = amount.split(",")
+            amt = ''
+            for x in _s:
+                amt += x
+                amount = int(amt)
+
         else:
-            new_value = str(new_value)
+            amount = int(amount)
+            if amount < 0:
+                return -1
 
-        self.userdb.update_one({"_id":user.id},{"$set":{stat:new_value}})
-        await ctx.message.add_reaction("✅")
+        return abs(amount)
 
-    @commands.command(hidden=True)
+    @commands.command(name="bal", aliases=["balance"])
+    async def bal(self, ctx, user: discord.Member = None):
+
+        if user is None:
+            user = ctx.author
+
+        data = await self.get_user(user)
+        settings_ = await self.get_settings()
+        if data is None:
+            return await ctx.send(f"{user.mention} has no account.")
+
+        bal = data["balance"]
+        embed = discord.Embed(colour=discord.Colour.from_rgb(0, 208, 255))
+        embed.add_field(name=f"Balance", value=f"{settings_['currency']} {numformat(bal)}")
+        embed.set_author(name=user.display_name, icon_url=user.display_avatar)
+        embed.set_footer(text='Leaderboard Position : #1')
+        embed.timestamp = datetime.utcnow()
+        return await ctx.send(embed=embed)
+
+    @commands.command(name="start")
+    async def start(self, ctx):
+
+        if self.users.count_documents({"_id": ctx.author.id}) == 0:
+            self.users.insert_one(
+                {"_id": ctx.author.id, "balance": 0, "boss_kills": 0, "can_collect_in": 0, "cf_winstreak": 0,
+                 "banned": False})
+
+            em = discord.Embed(description="Created your account.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+
+        else:
+            return
+
+    @commands.command(name="work", aliases=["job"])
+    async def work(self, ctx):
+        try:
+            user = await self.get_user(ctx.author)
+
+            settings_ = await self.get_settings()
+            if user["banned"] is False and settings_["work_disabled"] is False:
+
+                amount = await self.get_amount(ctx.author, randint(settings_["work_min"], settings_["work_max"]))
+                reply = choice(workReplies).replace("{}", f"{settings_['currency']} {numformat(amount)}")
+
+                embed = discord.Embed(description=reply, colour=discord.Colour.from_rgb(0, 208, 255))
+                embed.timestamp = datetime.utcnow()
+                embed.set_author(name="Work", icon_url=ctx.author.display_avatar)
+                embed.set_footer(text="Multiplier: x{}".format(settings_["global_multiplier"]))
+
+                await self.update_bal(ctx.author, amount)
+                await ctx.send(embed=embed)
+            else:
+                if user["banned"]:
+                    em = discord.Embed(description=":warning: You are banned from playing economy.",
+                                       colour=discord.Colour.from_rgb(255, 75, 75))
+                    em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(embed=em)
+
+                em = discord.Embed(description=":warning: This command is currently disabled.",
+                                   colour=discord.Colour.from_rgb(255, 75, 75))
+                em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                em.timestamp = datetime.utcnow()
+                return await ctx.send(embed=em)
+
+        except Exception:
+            em = discord.Embed(
+                description=":exclamation: You need an account to play eco. Type `!start` to create one.",
+                colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+
+    @commands.command(name="crime", aliases=["rob"])
+    async def crime(self, ctx):
+        try:
+            user = await self.get_user(ctx.author)
+
+            settings_ = await self.get_settings()
+            if user["banned"] is False and settings_["crime_disabled"] is False:
+
+                amount = await self.get_amount(ctx.author, randint(settings_["crime_min"], settings_["crime_max"]))
+                reply = choice(crimeReplies).replace("{}", f"{settings_['currency']} {numformat(amount)}")
+
+                embed = discord.Embed(description=reply, colour=discord.Colour.from_rgb(0, 208, 255))
+                embed.timestamp = datetime.utcnow()
+                embed.set_author(name="Crime", icon_url=ctx.author.display_avatar)
+                embed.set_footer(text="Multiplier: x{}".format(settings_["global_multiplier"]))
+
+                await self.update_bal(ctx.author, amount)
+                await ctx.send(embed=embed)
+            else:
+                if user["banned"]:
+                    em = discord.Embed(description=":warning: You are banned from playing economy.", colour=discord.Colour.from_rgb(255, 75, 75))
+                    em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(embed=em)
+
+                em = discord.Embed(description=":warning: This command is currently disabled.",
+                                   colour=discord.Colour.from_rgb(255, 75, 75))
+                em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                em.timestamp = datetime.utcnow()
+                return await ctx.send(embed=em)
+
+        except Exception:
+            em = discord.Embed(
+                description=":exclamation: You need an account to play eco. Type `!start` to create one.",
+                colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+
+    @commands.command(name="slut")
+    async def slut(self, ctx):
+        try:
+            user = await self.get_user(ctx.author)
+
+            settings_ = await self.get_settings()
+            if user["banned"] is False and settings_["slut_disabled"] is False:
+
+                amount = await self.get_amount(ctx.author, randint(settings_["slut_min"], settings_["slut_max"]))
+                reply = choice(slutReplies).replace("{}", f"{settings_['currency']} {numformat(amount)}")
+
+                embed = discord.Embed(description=reply, colour=discord.Colour.from_rgb(0, 208, 255))
+                embed.timestamp = datetime.utcnow()
+                embed.set_author(name="Slut", icon_url=ctx.author.display_avatar)
+                embed.set_footer(text="Multiplier: x{}".format(settings_["global_multiplier"]))
+
+                await self.update_bal(ctx.author, amount)
+                await ctx.send(embed=embed)
+            else:
+                if user["banned"]:
+                    em = discord.Embed(description=":warning: You are banned from playing economy.",
+                                       colour=discord.Colour.from_rgb(255, 75, 75))
+                    em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(embed=em)
+
+                em = discord.Embed(description=":warning: This command is currently disabled.",
+                                   colour=discord.Colour.from_rgb(255, 75, 75))
+                em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                em.timestamp = datetime.utcnow()
+                return await ctx.send(embed=em)
+
+        except Exception:
+            em = discord.Embed(
+                description=":exclamation: You need an account to play eco. Type `!start` to create one.",
+                colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+
+    @commands.command(name="givemoney", aliases=["give", "givemoneyto", "transfer", "pay"])
+    async def givemoney(self, ctx, user: discord.Member, amount: str):
+
+        if user.id == ctx.author.id:
+            em = discord.Embed(description=":warning: You can't give money to yourself.",
+                               colour=discord.Colour.from_rgb(255, 75, 75))
+            em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+
+        try:
+            donator = await self.get_user(ctx.author)
+            receiver = await self.get_user(user)
+            settings_ = await self.get_settings()
+
+            amount = await self.convert_amount(donator, amount)
+
+            if donator["banned"] is False and receiver["banned"] is False:
+
+                if amount == -1:
+                    em = discord.Embed(description=":warning: You can't give negative money.",
+                                       colour=discord.Colour.from_rgb(255, 75, 75))
+                    em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(embed=em)
+
+                elif amount <= donator["balance"]:
+                    await self.update_bal(ctx.author, -amount)
+                    await self.update_bal(user, amount)
+                    embed = discord.Embed(
+                        description=f"Gave {user.mention} {settings_['currency']} {numformat(amount)}",
+                        colour=discord.Colour.from_rgb(0, 208, 255))
+                    embed.timestamp = datetime.utcnow()
+                    embed.set_author(name="Give Money", icon_url=ctx.author.display_avatar)
+                    await ctx.send(embed=embed)
+
+                else:
+                    em = discord.Embed(description=":warning: You don't have enough money.",
+                                       colour=discord.Colour.from_rgb(255, 75, 75))
+                    em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(embed=em)
+
+            else:
+                if donator["banned"] or receiver["banned"]:
+                    em = discord.Embed(
+                        description=":warning: Either you or the person you are giving money to is banned from playing economy.",
+                        colour=discord.Colour.from_rgb(255, 75, 75))
+                    em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+                    em.timestamp = datetime.utcnow()
+                    return await ctx.send(embed=em)
+
+        except:
+            em = discord.Embed(
+                description=":warning: Error occurred, please check if both users have an account and try again.",
+                colour=discord.Colour.from_rgb(255, 75, 75))
+            em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+
+    # make a leaderboard command that sorts by balance and displays the top 10
+    @commands.command(name="leaderboard", aliases=["lb"])
+    async def leaderboard(self, ctx):
+        try:
+            users = await self.get_users()
+            users = sorted(users, key=lambda x: x["balance"], reverse=True)
+            embed = discord.Embed(
+                description="Top 10 Users",
+                colour=discord.Colour.from_rgb(0, 208, 255))
+            embed.timestamp = datetime.utcnow()
+            embed.set_author(name="Leaderboard", icon_url=ctx.author.display_avatar)
+            for i in range(10):
+                user = await self.get_user(users[i]["_id"])
+                embed.add_field(name=f"{i + 1}. {user['name']}", value=f"{settings['currency']} {numformat(user['balance'])}")
+            await ctx.send(embed=embed)
+        except:
+            await ctx.send("Error occurred, please try again.")
+
+    # ------------------------------------------- #
+    #              ADMIN COMMANDS                 #
+    # ------------------------------------------- #
+
+    # create an admin command that shows the current economy settings
+    @commands.command(name="settings")
     @commands.has_permissions(administrator=True)
     async def settings(self, ctx):
 
-        settings = self.settingsdb.find_one({"tag":"Settings"})
+        settings_ = await self.get_settings()
+        embed = discord.Embed(description = '', colour=discord.Colour.from_rgb(0, 208, 255))
+        embed.description += f"**Work**: {settings_['currency']} {await self.payout_multi(settings_['work_min'])} - {settings_['currency']} {await self.payout_multi(settings_['work_max'])}\n"
+        embed.description += f"**Crime**: {settings_['currency']} {await self.payout_multi(settings_['crime_min'])} - {settings_['currency']} {await self.payout_multi(settings_['crime_max'])}\n"
+        embed.description += f"**Slut**: {settings_['currency']} {await self.payout_multi(settings_['slut_min'])} - {settings_['currency']} {await self.payout_multi(settings_['slut_max'])}\n\n"
+        embed.description += f"**Currency**: {settings_['currency']}\n"
+        embed.description += f"**Multiplier**: x{settings_['global_multiplier']}"
+        embed.set_author(name="Settings", icon_url=ctx.author.display_avatar)
+        embed.timestamp = datetime.utcnow()
+        await ctx.send(embed=embed)
 
-        em = discord.Embed(description='',colour=discord.Colour.from_rgb(0,208,255))
-        currency = settings["currency"]
-        cf = settings["default_cf_winchance"]
-        eco = settings["economy_disabled"]
-        bosses = settings["bosses_disabled"]
-        em.description += f"**Currency**: {currency}\n"
-        em.description += f"**Cf Winchance**: {cf}%\n"
-        em.description += f"**Economy Disabled**: {eco}\n"
-        em.description += f"**Bosses Disabled**: {bosses}\n"
-        em.set_footer(text="To view payouts, use the payouts command.")
-        await ctx.send(embed=em)
-
-    @commands.command(aliases = ['set-currency'])
+    @commands.command(name="eco-ban", aliases=["ecoban", "eban"])
     @commands.has_permissions(administrator=True)
-    async def setcurrency(self, ctx, new_currency: str=None):
+    async def eco_ban(self, ctx, user: discord.Member):
 
-        if new_currency is None:
-            settings = self.settingsdb.find_one({"tag":"Settings"})
-            currency = settings["currency"]
-            await ctx.send(currency)
-        else:
-            self.settingsdb.update_one({"tag":"Settings"},{"$set":{"currency":new_currency}})
-            await ctx.message.add_reaction("✅")
+        await self.update_user(user, "banned", True)
+        embed = discord.Embed(description=f"{user.mention} has been banned from playing economy.",
+                              colour=discord.Colour.from_rgb(255, 75, 75))
+        embed.set_author(name="Economy Ban", icon_url=ctx.author.display_avatar)
+        embed.timestamp = datetime.utcnow()
+        await ctx.send(embed=embed)
 
-    @commands.command()
-    async def work(self, ctx):
-
-        if self.userdb.count_documents({"_id":ctx.author.id}) == 0:
-            return
-        else:
-
-            # Getting values and multis
-            min_val = await self.get_setting('work_min_value')
-            max_val = await self.get_setting('work_max_value')
-            bal = await self.get_stat('bal', ctx.author.id)
-            multi = await self.get_rank_multi(ctx, ctx.author)
-            amount = randint(min_val*multi, max_val*multi)
-            replyMsg = choice(workReplies).format(f"{amount:,}")
-
-            # Updating User Bal
-            self.userdb.update_one({"_id":ctx.author.id},{"$set":{"bal":bal+amount}})
-
-            embed = discord.Embed(
-                description = replyMsg,
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-
-            embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar)
-            embed.set_footer(text=f"Rank Boost: {multi}x")
-            embed.timestamp = datetime.utcnow()
-            await ctx.reply(embed=embed, mention_author=False)
-    
-    @commands.command(aliases = ['ball', 'profile'])
+    @commands.command(name="eco-unban", aliases=["ecounban", "eunban"])
     @commands.has_permissions(administrator=True)
-    async def balance(self, ctx, user: discord.Member=None):
+    async def eco_unban(self, ctx, user: discord.Member):
 
-        if user is None:
-            id = ctx.author.id
-            av = ctx.author.display_avatar
-            name = ctx.author
-        else:
-            id = user.id
-            av = user.display_avatar
-            name = user
+        await self.update_user(user, "banned", False)
+        embed = discord.Embed(description=f"{user.mention} has been unbanned from playing economy.",
+                              colour=discord.Colour.from_rgb(255, 75, 75))
+        embed.set_author(name="Economy Unban", icon_url=ctx.author.display_avatar)
+        embed.timestamp = datetime.utcnow()
+        await ctx.send(embed=embed)
 
+    @commands.command(name="set_currency", aliases=["setcurrency"])
+    @commands.has_permissions(administrator=True)
+    async def set_currency(self, ctx, currency: str):
         try:
-        
-            bal = await self.get_stat("bal", id)
-            boss_kills = await self.get_stat("boss_kills", id)
-            currency = await self.get_setting("currency")
-            position = await self.lb_position(ctx, "bal", id)
+            await self.set_setting("currency", currency)
+            em = discord.Embed(description=f":white_check_mark: Currency set to `{currency}`.",
+                               colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name="Set Currency", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
+        except Exception:
+            em = discord.Embed(description=":exclamation: Could not set currency, please try again.",
+                               colour=discord.Colour.from_rgb(255, 75, 75))
+            em.set_author(name="Set Currency", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
-            embed = discord.Embed(
-                colour = discord.Colour.from_rgb(0, 208, 255),
-            )
-            embed.add_field(name="Balance", value=f"{currency} {bal:,}", inline=True)
-            embed.add_field(name="<:transparent:911319446918955089>", value="<:transparent:911319446918955089>", inline=True)
-            embed.add_field(name="Position", value=f"{position}/{ctx.guild.member_count}", inline=True)
-            embed.add_field(name="Boss Kills", value=boss_kills, inline=False)
-            embed.set_author(name=name, icon_url=av)
-            embed.timestamp = datetime.utcnow()
-            return await ctx.reply(embed=embed, mention_author=False)
+    @commands.command(name="toggle-boss", aliases=["toggleboss", "tboss"])
+    @commands.has_permissions(administrator=True)
+    async def toggle_boss(self, ctx, toggle: str="enable"):
 
-        except:
-            
-            # User does not have an actual profile
-            if self.userdb.count_documents({"_id":id}) == 0:
-                self.userdb.insert_one({
-                    "_id":id,
-                    "bal":0,
-                    "can_collect_in":0,
-                    "boss_kills":0,
-                    "cf_winstreak":0,
-                    "eco_locked":False,
-                })
+        if toggle.lower() == "enable":
+            await self.set_setting("bosses_disabled", False)
+            em = discord.Embed(description=":white_check_mark: Bosses have been `enabled`.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name="Toggle Bosses", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
-                bal = await self.get_stat("bal", id)
-                boss_kills = await self.get_stat("boss_kills", id)
-                currency = await self.get_setting("currency")
-                position = await self.lb_position(ctx, "bal", id)
+        elif toggle.lower() == "disable":
+            await self.set_setting("bosses_disabled", True)
+            em = discord.Embed(description=":white_check_mark: Bosses have been `disabled`.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name="Toggle Bosses", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
+    @commands.command(name="edit_payouts", aliases=["editpayouts", "setpayouts", "set"])
+    @commands.has_permissions(administrator=True)
+    async def set(self, ctx, command: str, type_: str, amount: int = None):
 
-                embed = discord.Embed(
-                    colour = discord.Colour.from_rgb(0, 208, 255),
-                )
-                embed.add_field(name="Balance", value=f"{currency} {bal:,}", inline=True)
-                embed.add_field(name="<:transparent:911319446918955089>", value="<:transparent:911319446918955089>", inline=True)
-                embed.add_field(name="Position", value=f"{position}", inline=False)
-                embed.add_field(name="Boss Kills", value=boss_kills, inline=True)
-                embed.set_author(name=name, icon_url=av)
-                embed.timestamp = datetime.utcnow()
-                return await ctx.reply(embed=embed, mention_author=False)
-            
-            # Command failed in general
-            else:
-                await ctx.reply(":exclamation: Command failed.", mention_author=False)
+        if command.lower() in ['multi', 'multiplier', 'm']:
+            await self.set_setting(f"global_multiplier", int(type_))
+            em = discord.Embed(description=f":white_check_mark: Global multiplier set to `{int(type_)}`x.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name="Payouts", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
-    @commands.command()
-    async def lb(self, ctx, _type=None):
+        if type_.lower() == "min":
+            await self.set_setting(f"{command.lower()}_min", amount)
+            em = discord.Embed(description=f":white_check_mark: {command.title()} minimum payout set to `{amount}`.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name="Payouts", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
-        i = 1
+        if type_.lower() == "max":
+            await self.set_setting(f"{command.lower()}_max", amount)
+            em = discord.Embed(description=f":white_check_mark: {command.title()} maximum payout set to `{amount}`.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name="Payouts", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
-        if _type is None or _type == "gem":
+        if type_.lower() == "disable":
+            await self.set_setting(f"{command.lower()}_disabled", True)
+            em = discord.Embed(description=f":white_check_mark: {command.title()} has been `disabled`.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name="Payouts", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
-            embed = discord.Embed(
-                description = "Gems can be used in exchange to purchase different ranks and items over at `>shop`.\n",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
+        if type_.lower() == "enable":
+            await self.set_setting(f"{command.lower()}_disabled", False)
+            em = discord.Embed(description=f":white_check_mark: {command.title()} has been `enabled`.", colour=discord.Colour.from_rgb(0, 208, 255))
+            em.set_author(name="Payouts", icon_url=ctx.author.display_avatar)
+            em.timestamp = datetime.utcnow()
+            return await ctx.send(embed=em)
 
-            rankings = self.userdb.find().sort("bal",-1)
-            currency = await self.get_setting("currency")
+        if type_.lower() in ['work', 'slut', 'crime']:
 
-            for entry in rankings:
-                try:
-                    user = ctx.guild.get_member(entry["_id"])
-                    bal = entry["bal"]
-                    #embed.add_field(name=f"`[#{i}]` {temp.name}", value=f":gem: {bal:,}", inline=False)
+            if command.lower() == 'enable':
+                await self.set_setting(f"{type_.lower()}_disabled", False)
+                em = discord.Embed(description=f":white_check_mark: {type_.title()} has been `enabled`.", colour=discord.Colour.from_rgb(0, 208, 255))
+                em.set_author(name="Payouts", icon_url=ctx.author.display_avatar)
+                em.timestamp = datetime.utcnow()
+                return await ctx.send(embed=em)
 
-                    if user.id == ctx.author.id:
-                        embed.set_footer(text=f"Your Rank: {i}/{ctx.guild.member_count}")
-
-                    if i in [1, 2, 3]:
-                        embed.description += f"\n**#{i}.** {user.mention} - {currency} {bal:,} \n\n"
-                        #embed.add_field(name=f"**#{i}.** {user.name}",value=f"{currency} {bal}\n<:transparent:911319446918955089>")
-                    elif i == 10:       
-                        embed.description += f"\n#{i}. {user.mention} - {user.mention} - {currency} {bal:,}"
-                        #embed.add_field(name=f"**#{i}.** {user.mention}",value=f"{currency} {bal}\n<:transparent:911319446918955089>")
-                    else:
-                        embed.description += f"\n#{i}. {user.mention} - {user.mention} - {currency} {bal:,} \n<:transparent:911319446918955089>"
-                        #embed.add_field(name=f"**#{i}.** {user.mention}",value=f"{currency} {bal}\n<:transparent:911319446918955089>")
-                    i += 1
-                except:
-                    pass
-                if i == 11:
-                    break
-
-            embed.timestamp = datetime.utcnow()
-            embed.set_author(name="Gem Leaderboard", icon_url=ctx.guild.icon.url) 
-            await ctx.send(embed=embed)
-
-        if _type == "kills":
-
-            embed = discord.Embed(
-                description = "Boss kills are counted whenever you kill a boss, tutorial bosses (Minion) not included.\n",
-                colour = discord.Colour.from_rgb(0, 208, 255)
-            )
-
-            rankings = self.userdb.find().sort("boss_kills",-1)
-            for entry in rankings:
-                try:
-                    user = ctx.guild.get_member(entry["_id"])
-                    kills = entry["boss_kills"]
-                    #embed.add_field(name=f"`[#{i}]` {temp.name}", value=f":gem: {bal:,}", inline=False)
-
-                    if user.id == ctx.author.id:
-                        embed.set_footer(text=f"Your Rank: {i}/{ctx.guild.member_count}")
-
-                    if i in [1, 2, 3]:
-                        embed.description += f"\n**#{i}.** {user.mention} - :crossed_swords: {kills} \n\n"
-                        #embed.add_field(name=f"**#{i}.** {user.mention}",value=f":crossed_swords: {bal}\n<:transparent:911319446918955089>")
-                    elif i == 10:       
-                        embed.description += f"\n#{i}. {user.mention} - :crossed_swords: {kills}"
-                        #embed.add_field(name=f"**#{i}.** {user.mention}",value=f":crossed_swords: {bal}\n<:transparent:911319446918955089>")
-                    else:
-                        embed.description += f"\n#{i}. {user.mention} - :crossed_swords: {kills} \n<:transparent:911319446918955089>"
-                        #embed.add_field(name=f"**#{i}.** {user.mention}",value=f":crossed_swords: {bal}\n<:transparent:911319446918955089>")
-                    i += 1
-                except:
-                    pass
-                if i == 11:
-                    break
-
-            embed.timestamp = datetime.utcnow()
-            embed.set_author(name="Kills Leaderboard", icon_url=ctx.guild.icon.url) 
-            await ctx.send(embed=embed)
+            if command.lower() == 'disable':
+                await self.set_setting(f"{type_.lower()}_disabled", True)
+                em = discord.Embed(description=f":white_check_mark: {type_.title()} has been `disabled`.", colour=discord.Colour.from_rgb(0, 208, 255))
+                em.set_author(name="Payouts", icon_url=ctx.author.display_avatar)
+                em.timestamp = datetime.utcnow()
+                return await ctx.send(embed=em)
 
 def setup(client):
     client.add_cog(Economy(client))
