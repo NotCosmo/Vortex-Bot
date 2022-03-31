@@ -5,7 +5,10 @@ from nextcord.ext import commands
 import aiohttp
 import jishaku
 
-GUILD_ID = 581139467381768192
+from pymongo import MongoClient
+cluster = MongoClient("mongodb+srv://Cosmo:1H1uqPGjo5CjtHQe@eco.5afje.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+database = cluster["Discord"]
+db = database["Server_Utils"]
 
 version = "v1.51"
 latest_update = "> New Admin Commands\n> Bi & Les rate commands."
@@ -53,7 +56,8 @@ os.environ["JISHAKU_EMBEDDED_JSK_COLOUR"] = "0x00d0ff"
 os.environ.setdefault("JISHAKU_NO_UNDERSCORE", "1")
 os.environ.setdefault("JISHAKU_HIDE", "0")
 
-token = os.environ['token']
+data = db.find_one({"tag":"token"})
+token = data['bot_token']
 
 if __name__ == "__main__":
     async def startup():
