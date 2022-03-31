@@ -3,3 +3,4 @@ asyncio
 aiohttp
 jishaku
 pymongo
+dnspython
