@@ -12,7 +12,6 @@ import asyncio
 import datetime
 from pymongo import MongoClient
 from .utils.utils_dict import levels
-import PIL
 from easy_pil import Canvas, Editor, Font, load_image_async
 
 # ------------------------------- #

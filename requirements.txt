@@ -4,5 +4,4 @@ aiohttp
 jishaku
 pymongo
 dnspython
-PIL
-easy-pil
+easy_pil
