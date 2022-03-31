@@ -1,4 +1,3 @@
-from keep_alive import keep_alive
 import nextcord as discord
 import datetime
 import os
@@ -54,7 +53,6 @@ os.environ["JISHAKU_EMBEDDED_JSK_COLOUR"] = "0x00d0ff"
 os.environ.setdefault("JISHAKU_NO_UNDERSCORE", "1")
 os.environ.setdefault("JISHAKU_HIDE", "0")
 
-keep_alive()
 token = os.environ['token']
 
 if __name__ == "__main__":
