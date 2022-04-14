@@ -57,6 +57,10 @@ class StartUp(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @commands.command()
+    async def ghtest(self, ctx):
+        await ctx.send("working lol")
+    
+    @commands.command()
     @commands.is_owner()
     async def rules(self, ctx):
         
