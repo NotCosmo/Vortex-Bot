@@ -1,22 +1,14 @@
 import nextcord as discord
-import json
 from nextcord.utils import find
 from nextcord.ext import commands
 import io
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime
 
 class Events(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-
-    @commands.Cog.listener()
-    async def on_message(self, ctx):
-
-        pass
-        #if ctx.mentions:
-        #    return await ctx.channel.send(ctx.mentions)
     
     @commands.Cog.listener()
     async def on_member_join(self, user):

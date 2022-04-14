@@ -1,3 +1,4 @@
+from keep_alive import keep_alive
 import nextcord as discord
 import datetime
 import os
@@ -59,9 +60,5 @@ os.environ.setdefault("JISHAKU_HIDE", "0")
 data = db.find_one({"tag":"token"})
 token = data['bot_token']
 
-if __name__ == "__main__":
-    async def startup():
-        client.session = aiohttp.ClientSession()
-
-    client.loop.create_task(startup())
-    client.run(token)
+keep_alive()
+client.run(token)

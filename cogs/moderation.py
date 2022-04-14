@@ -47,7 +47,7 @@ class Staff(commands.Cog, description="Moderation and Economy config commands.")
         created = data["create_date"]
         uptime = int(data["uptime_start"])
         em = discord.Embed(colour = discord.Colour.from_rgb(0, 208, 255))
-        em.add_field(name="__About__", value=f"Hey, I'm Vortex. I'm a multi-purpose bot made for this server for any purpose you would need. From basic fun modules, to a fully fledged economy system! (*Made using `nextcord`*)\n\n**Developer** `cosmo.#5056`\n**Created** <t:{created}:R>\n\n",inline=False)
+        em.add_field(name="__About__", value=f"Hey, I'm Vortex. I'm a multi-purpose bot made for this server for any purpose you would need. From basic fun modules, to a fully fledged economy system!\n\n**Developer** `cosmo.#5056`\n**Created** <t:{created}:R> using `nextcord`.\n\n",inline=False)
         em.add_field(name="__Bot Stats__", value=f":robot: **Bot Ping** {round(self.client.latency * 1000, 2)}ms\n:stopwatch: **Uptime** <t:{uptime}:R>",inline=False)
         em.set_author(name="Bot Info",icon_url=self.client.user.display_avatar)
         em.timestamp = datetime.utcnow()
@@ -233,20 +233,19 @@ class Staff(commands.Cog, description="Moderation and Economy config commands.")
                 description = "",
                 colour = discord.Colour.from_rgb(47, 49, 55)
             )
+            
+            user = await self.client.fetch_user(user_id)
+            mod = ctx.guild.get_member(mod_id)
                 
-            user = ctx.guild.get_member(user_id).mention
-            mod = ctx.guild.get_member(mod_id).mention
-            user_av = ctx.guild.get_member(user_id).display_avatar
-                
-            em.set_thumbnail(url=user_av)
+            em.set_thumbnail(url=user.display_avatar)
             if data["deleted"] == True:
                 em.description += ":lock: **This case has been deleted.**"
-            em.description += f"\n\n**User:** {user}\n**Moderator**: {mod}\n\n**Reason**: {reason}\n**Time**: <t:{int(time)}:t> | <t:{int(time)}:R>"
-            
+            em.description += f"\n\n**User:** {user.mention}\n**Moderator**: {mod.mention}\n\n**Reason**: {reason}\n**Time**: <t:{int(time)}:t> | <t:{int(time)}:R>"
             em.timestamp = datetime.utcnow()
             return await ctx.send(embed=em)
             
         except:
+            raise
             em = discord.Embed(
                 title = ':warning: Error',
                 description = f'Could not find a case with the ID `{case_id}`.',

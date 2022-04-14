@@ -28,14 +28,17 @@ def numformat(number):
     if number < 1000:
         return number
     elif number < 1000000:
-        return "{:.2f}K".format(number / 1000)
+        s = "{:.2f}K".format(number / 1000)
     elif number < 1000000000:
-        return "{:.2f}M".format(number / 1000000)
+        s = "{:.2f}M".format(number / 1000000)
     elif number < 1000000000000:
-        return "{:.2f}B".format(number / 1000000000)
+        s = "{:.2f}B".format(number / 1000000000)
     elif number < 1000000000000000:
-        return "{:.2f}T".format(number / 1000000000000)
-
+        s = "{:.2f}T".format(number / 1000000000000)
+        
+    if ".00" in s:
+        s = s.replace(".00", "")
+    return s
 
 class Economy(commands.Cog):
 
@@ -89,9 +92,9 @@ class Economy(commands.Cog):
 
     # Update user bal
     async def update_bal(self, user_: discord.Member, amount: int) -> None:
-
+        
         user = await self.get_user(user_)
-        user["balance"] += amount
+        user['balance'] += amount
         return self.users.replace_one({"_id": user_.id}, user)
 
     # Get and return settings object
@@ -382,10 +385,34 @@ class Economy(commands.Cog):
         except:
             await ctx.send("Error occurred, please try again.")
 
+    @commands.command()
+    async def updatetest(self, ctx):
+
+        await self.update_bal(ctx.author, -100)
+            
     # ------------------------------------------- #
     #              ADMIN COMMANDS                 #
     # ------------------------------------------- #
 
+    @commands.command(name="addmoney")
+    @commands.has_permissions(administrator=True)
+    async def add_money(self, ctx, user: discord.Member, amt: int):
+        
+        amount = await self.convert_amount(ctx.author, amt)
+        st = await self.get_settings()
+        
+        try:
+            await self.update_bal(user, amount)
+            embed = discord.Embed(
+                description=f"Added {st['currency']} {numformat(amount)} to {user.mention}",
+                colour=discord.Colour.from_rgb(0, 208, 255))
+            embed.timestamp = datetime.utcnow()
+            await ctx.reply(embed=embed, mention_author=False)
+        except:
+            embed = discord.Embed(description=f"Error occured, please try again.", colour=discord.Colour.from_rgb(255, 75, 75))
+            embed.timestamp = datetime.utcnow()
+            await ctx.reply(embed=embed, mention_author=False)
+        
     # create an admin command that shows the current economy settings
     @commands.command(name="settings")
     @commands.has_permissions(administrator=True)

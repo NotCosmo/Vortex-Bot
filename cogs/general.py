@@ -6,6 +6,7 @@ import datetime
 import asyncio
 import random
 import aiohttp
+import typing
 
 # Side Imports
 
@@ -20,6 +21,61 @@ class General(commands.Cog,description="General bot commands, anything from fun 
     def __init__(self, client):
         self.client = client
 
+    async def type_check(self, input) -> None:
+
+        if input == typing.Union[str, None]:
+            return None
+        return input
+    
+    @commands.command()
+    async def poll(
+        self, ctx,
+        title: str,
+        a: str,
+        b: str,
+        c: str = typing.Optional[str],
+        d: str = typing.Optional[str],
+    ):
+
+        embed = discord.Embed(title=title, description = f":regional_indicator_a: {a}\n\n:regional_indicator_b: {b}", colour=discord.Colour.from_rgb(0, 208, 255))
+
+        if await self.type_check(c) is not None:
+            embed.description += f"\n\n:regional_indicator_c: {c}"
+            if await self.type_check(d) is not None:
+                embed.description += f"\n\n:regional_indicator_d: {d}"
+
+        embed.timestamp = datetime.datetime.utcnow()
+        embed.set_footer(text=f"Poll by {ctx.author}")
+        await ctx.message.delete()
+        m = await ctx.send(embed=embed)
+        await m.add_reaction('🇦')
+        await m.add_reaction('🇧')
+        if await self.type_check(c) is not None:
+            await m.add_reaction('🇨')
+            if await self.type_check(d) is not None:
+                await m.add_reaction('🇩')
+    
+    @discord.slash_command(name="poll",description="A command to create polls",guild_ids=[581139467381768192])
+    async def _poll(
+        self,
+        interaction: Interaction,
+        title: str = SlashOption(description="Title of the poll",required=True),
+        a: str = SlashOption(description="Option A",required=True),
+        b: str = SlashOption(description="Option B",required=True),
+        c: str = SlashOption(description="Option C",required=False),
+        d: str = SlashOption(description="Option D",required=False),
+    ):
+
+        embed = discord.Embed(title=title, description = f"**A**: {a}\n\n**B**: {b}", colour=discord.Colour.from_rgb(0, 208, 255))
+
+        if c:
+            embed.description += f"\n\n**C**: {c}"
+            if d:
+                embed.description += f"\n\n**D**: {d}"
+        
+        m = await interaction.send(embed=embed)
+        await interaction.send(m)
+    
     @discord.slash_command(name="8ball",description="8ball command!",guild_ids=[581139467381768192])
     async def _8ball(
         self,
