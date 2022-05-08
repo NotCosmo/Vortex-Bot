@@ -8,7 +8,7 @@ import time
 
 from nextcord.ext import commands
 from nextcord.ext.commands import BucketType
-from nextcord.utils import find
+from nextcord.utils import find, get
 from datetime import datetime
 from pymongo import MongoClient
 from random import choice, randint
@@ -24,7 +24,10 @@ users = database["Users"]
 collectdb = database["Collect"]
 settings = database["EcoSettings"]
 
+
 def numformat(number):
+    
+    s = number
     if number < 1000:
         return number
     elif number < 1000000:
@@ -109,12 +112,24 @@ class Economy(commands.Cog):
         settings_[setting] = value
         return self.settings.replace_one({"_id": "settings"}, settings_)
 
+    # Get and return rank multi
+    async def get_rank_multi(self, ctx, user_: int) -> int:
+
+        rank_multi = 1
+        
+        # get [I] Beginner role
+        if (get(ctx.guild.roles, name="[I] Beginner") in ctx.author.roles):
+            rank_multi = 2
+        if (get(ctx.guild.roles, name="[II] Poggers") in ctx.author.roles):
+            rank_multi = 2.5
+            
+        return rank_multi
+    
     # Amount to give user (based on multis)
     async def get_amount(self, user_: discord.Member, amount: int) -> int:
 
         user_ = await self.get_user(user_)
         settings_ = await self.get_settings()
-        # rank_multi = await self.get_rank_multi(user_)
 
         return int(amount * settings_["global_multiplier"])
 
@@ -153,7 +168,17 @@ class Economy(commands.Cog):
 
         return abs(amount)
 
+    # Get and return user position
+    async def get_position(self, user_: int) -> int:
+
+        i = 1
+        for data in self.users.find().sort("balance", -1):
+            if data["_id"] == user_:
+                return i
+            i += 1
+
     @commands.command(name="bal", aliases=["balance"])
+    @commands.has_permissions(administrator=True)
     async def bal(self, ctx, user: discord.Member = None):
 
         if user is None:
@@ -189,6 +214,7 @@ class Economy(commands.Cog):
             return
 
     @commands.command(name="work", aliases=["job"])
+    @commands.has_permissions(administrator=True)
     async def work(self, ctx):
         try:
             user = await self.get_user(ctx.author)
@@ -196,20 +222,20 @@ class Economy(commands.Cog):
             settings_ = await self.get_settings()
             if user["banned"] is False and settings_["work_disabled"] is False:
 
-                amount = await self.get_amount(ctx.author, randint(settings_["work_min"], settings_["work_max"]))
+                multi = await self.get_rank_multi(ctx, ctx.author.id)
+                amount = int(await self.get_amount(ctx.author, randint(settings_["work_min"], settings_["work_max"])) * multi)
                 reply = choice(workReplies).replace("{}", f"{settings_['currency']} {numformat(amount)}")
 
                 embed = discord.Embed(description=reply, colour=discord.Colour.from_rgb(0, 208, 255))
                 embed.timestamp = datetime.utcnow()
                 embed.set_author(name="Work", icon_url=ctx.author.display_avatar)
-                embed.set_footer(text="Multiplier: x{}".format(settings_["global_multiplier"]))
+                embed.set_footer(text=f"Multiplier: x{multi}")
 
                 await self.update_bal(ctx.author, amount)
                 await ctx.send(embed=embed)
             else:
                 if user["banned"]:
-                    em = discord.Embed(description=":warning: You are banned from playing economy.",
-                                       colour=discord.Colour.from_rgb(255, 75, 75))
+                    em = discord.Embed(description=":warning: You are banned from playing economy.",colour=discord.Colour.from_rgb(255, 75, 75))
                     em.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
                     em.timestamp = datetime.utcnow()
                     return await ctx.send(embed=em)
@@ -221,6 +247,7 @@ class Economy(commands.Cog):
                 return await ctx.send(embed=em)
 
         except Exception:
+            raise
             em = discord.Embed(
                 description=":exclamation: You need an account to play eco. Type `!start` to create one.",
                 colour=discord.Colour.from_rgb(0, 208, 255))
@@ -229,6 +256,7 @@ class Economy(commands.Cog):
             return await ctx.send(embed=em)
 
     @commands.command(name="crime", aliases=["rob"])
+    @commands.has_permissions(administrator=True)
     async def crime(self, ctx):
         try:
             user = await self.get_user(ctx.author)
@@ -236,13 +264,14 @@ class Economy(commands.Cog):
             settings_ = await self.get_settings()
             if user["banned"] is False and settings_["crime_disabled"] is False:
 
-                amount = await self.get_amount(ctx.author, randint(settings_["crime_min"], settings_["crime_max"]))
+                multi = await self.get_rank_multi(ctx, ctx.author.id)
+                amount = int(await self.get_amount(ctx.author, randint(settings_["work_min"], settings_["work_max"])) * multi)
                 reply = choice(crimeReplies).replace("{}", f"{settings_['currency']} {numformat(amount)}")
 
                 embed = discord.Embed(description=reply, colour=discord.Colour.from_rgb(0, 208, 255))
                 embed.timestamp = datetime.utcnow()
                 embed.set_author(name="Crime", icon_url=ctx.author.display_avatar)
-                embed.set_footer(text="Multiplier: x{}".format(settings_["global_multiplier"]))
+                embed.set_footer(text=f"Multiplier: x{multi}")
 
                 await self.update_bal(ctx.author, amount)
                 await ctx.send(embed=embed)
@@ -268,6 +297,7 @@ class Economy(commands.Cog):
             return await ctx.send(embed=em)
 
     @commands.command(name="slut")
+    @commands.has_permissions(administrator=True)
     async def slut(self, ctx):
         try:
             user = await self.get_user(ctx.author)
@@ -275,13 +305,14 @@ class Economy(commands.Cog):
             settings_ = await self.get_settings()
             if user["banned"] is False and settings_["slut_disabled"] is False:
 
-                amount = await self.get_amount(ctx.author, randint(settings_["slut_min"], settings_["slut_max"]))
+                multi = await self.get_rank_multi(ctx, ctx.author.id)
+                amount = int(await self.get_amount(ctx.author, randint(settings_["work_min"], settings_["work_max"])) * multi)
                 reply = choice(slutReplies).replace("{}", f"{settings_['currency']} {numformat(amount)}")
 
                 embed = discord.Embed(description=reply, colour=discord.Colour.from_rgb(0, 208, 255))
                 embed.timestamp = datetime.utcnow()
                 embed.set_author(name="Slut", icon_url=ctx.author.display_avatar)
-                embed.set_footer(text="Multiplier: x{}".format(settings_["global_multiplier"]))
+                embed.set_footer(text=f"Multiplier: x{multi}")
 
                 await self.update_bal(ctx.author, amount)
                 await ctx.send(embed=embed)
@@ -300,6 +331,7 @@ class Economy(commands.Cog):
                 return await ctx.send(embed=em)
 
         except Exception:
+            raise
             em = discord.Embed(
                 description=":exclamation: You need an account to play eco. Type `!start` to create one.",
                 colour=discord.Colour.from_rgb(0, 208, 255))
@@ -308,6 +340,7 @@ class Economy(commands.Cog):
             return await ctx.send(embed=em)
 
     @commands.command(name="givemoney", aliases=["give", "givemoneyto", "transfer", "pay"])
+    @commands.has_permissions(administrator=True)
     async def givemoney(self, ctx, user: discord.Member, amount: str):
 
         if user.id == ctx.author.id:
@@ -369,21 +402,28 @@ class Economy(commands.Cog):
 
     # make a leaderboard command that sorts by balance and displays the top 10
     @commands.command(name="leaderboard", aliases=["lb"])
+    @commands.has_permissions(administrator=True)
     async def leaderboard(self, ctx):
-        try:
-            users = await self.get_users()
-            users = sorted(users, key=lambda x: x["balance"], reverse=True)
-            embed = discord.Embed(
-                description="Top 10 Users",
-                colour=discord.Colour.from_rgb(0, 208, 255))
-            embed.timestamp = datetime.utcnow()
-            embed.set_author(name="Leaderboard", icon_url=ctx.author.display_avatar)
-            for i in range(10):
-                user = await self.get_user(users[i]["_id"])
-                embed.add_field(name=f"{i + 1}. {user['name']}", value=f"{settings['currency']} {numformat(user['balance'])}")
-            await ctx.send(embed=embed)
-        except:
-            await ctx.send("Error occurred, please try again.")
+
+        embed = discord.Embed(title="Leaderboard", colour=discord.Colour.from_rgb(0, 208, 255))
+        settings_ = await self.get_settings()
+        i = 1
+
+        for data in self.users.find().sort("balance", -1):
+            if data["banned"] is False:
+                # fetch user object
+                user = await self.client.fetch_user(data["_id"])
+                if i == 10:
+                    embed.add_field(name=f"{i} - {user.name}#{user.discriminator}", value=f"{settings_['currency']} {numformat(data['balance'])}", inline=False)
+                else:
+                    embed.add_field(name=f"{i} - {user.name}#{user.discriminator}", value=f"{settings_['currency']} {numformat(data['balance'])}\n<:transparent:911319446918955089>", inline=False)
+                i += 1
+                if i == 11:
+                    break
+        
+        embed.description = f"Gems can be used to buy new ranks in the shop, as well as upgrade your items."
+        embed.set_footer(text=f"Position: {await self.get_position(ctx.author.id)}/{self.users.count_documents({})}")
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def updatetest(self, ctx):

@@ -245,7 +245,8 @@ class Shop(commands.Cog):
         await original.edit(embed=embed)
         _role = await self.check_message(ctx)
         if _role is None: return await ctx.send(embed=timeout_embed)
-        item_role = await self.get_role(ctx, _role) # Get role object
+        item_role = await self.get_role_name(ctx, _role.content) # Get role object
+        embed.remove_field(3)
         embed.add_field(name="Role Assigned", value=item_role.mention, inline=True)
         await original.edit(embed=embed)
 
@@ -256,6 +257,43 @@ class Shop(commands.Cog):
             "item_desc": item_desc.content,
             "item_role": item_role.name
         })
+
+    @commands.command(name="iteminfo", aliases=["ii", "iinfo"])
+    async def item_info(self, ctx, *, item_name: str):
+        """
+        Get information about an item.
+        """
+        st = await self.get_settings()
+        currency = st["currency"]
+
+        for data in self.shop.find().sort("_id",-1):
+
+            item = await self.get_item(data["item_name"])
+            if item is None:
+                return await ctx.send(f"Item `{item_name}` not found.")
+            if item_name.lower() in item["item_name"].lower():
+                embed = discord.Embed(colour=discord.Colour.from_rgb(0, 208, 255))
+                embed.set_author(name=item["item_name"], icon_url=ctx.author.display_avatar)
+                embed.timestamp = datetime.utcnow()
+                embed.add_field(name="Item Price", value=f"{currency} {item['item_price']:,}", inline=False)
+                embed.add_field(name="Item Description", value=item["item_desc"], inline=False)
+                embed.add_field(name="Role Assigned", value=await self.get_role_name(ctx, item["item_role"]), inline=False)
+                return await ctx.send(embed=embed)
+            else: continue
+
+    
+    @commands.command(name="deleteitem", aliases=["di", "delete"])
+    @commands.has_permissions(administrator=True)
+    async def delete_item(self, ctx, item_name: str):
+        
+        for data in self.shop.find().sort("_id", 1):
+
+            item = await self.get_item(data["item_name"])
+            if item is None: continue
+            if item_name.lower() in item["item_name"].lower():
+                n = item["item_name"]
+                await ctx.send(f"Item {n} deleted.")
+                return self.shop.delete_one({"_id": data["_id"]})
 
 def setup(client):
     client.add_cog(Shop(client))

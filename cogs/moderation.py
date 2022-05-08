@@ -245,15 +245,14 @@ class Staff(commands.Cog, description="Moderation and Economy config commands.")
             return await ctx.send(embed=em)
             
         except:
-            raise
             em = discord.Embed(
                 title = ':warning: Error',
                 description = f'Could not find a case with the ID `{case_id}`.',
                 colour = discord.Colour.from_rgb(47, 49, 55)
             )
             return await ctx.send(embed=em)
-
-    @commands.command()
+    
+    @commands.command(aliases=['logs', 'history'])
     @commands.has_permissions(administrator=True)
     async def cases(self, ctx, user: discord.Member):
 
@@ -262,6 +261,9 @@ class Staff(commands.Cog, description="Moderation and Economy config commands.")
             description = '',
             colour = discord.Colour.from_rgb(47, 49, 55)
         )
+
+        if self.db.count_documents({'user_id':ctx.author.id}) == 0:
+            return await ctx.send("no history L bozo")
         
         data = self.db.find().sort("_case_id",-1)
         for entry in data:
