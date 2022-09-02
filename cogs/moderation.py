@@ -18,18 +18,10 @@ class Staff(commands.Cog, description="Moderation and Economy config commands.")
         self.db = db
         self.lockdown = lockdown
         self.utils = utils
-
-    @commands.command(aliases=['dm', 'send'])
-    @commands.is_owner()
-    async def dm_user(self, ctx, user: discord.User, *, message: str) -> None:
-        await ctx.message.delete()
-        try:
-            return await user.send(message)
-        except Exception:
-            return await ctx.author.send("Could not dm user.")
             
     
     @commands.command(aliases=['cr', 'createrole'])
+    @commands.has_permissions(administrator=True)
     async def create_role(self, ctx, *, name: str='new role'):
 
         role = await ctx.guild.create_role(name=name)
@@ -445,6 +437,30 @@ class Staff(commands.Cog, description="Moderation and Economy config commands.")
 
             else:
                 pass
+
+    @commands.command()
+    @commands.has_permissions(manage_roles=True)
+    async def roleaddall(self, ctx, role: discord.Role):
+
+        count = 0
+        for member in ctx.guild.members:
+            if role not in member.roles:
+                await member.add_roles(role)
+                count += 1
+
+        await ctx.send(f"Edited {count} users.")
+
+    @commands.command()
+    @commands.has_permissions(manage_roles=True)
+    async def roleremoveall(self, ctx, role: discord.Role):
+
+        count = 0
+        for member in ctx.guild.members:
+            if role not in member.roles:
+                await member.remove_roles(role)
+                count += 1
+
+        await ctx.send(f"Edited {count} users.")
 
     #--------------#
     @role.error

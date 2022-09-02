@@ -18,8 +18,9 @@ timeNow = datetime.datetime.utcnow()
 # vortex
 # Format = <:stonks:713292086954295296>
 
-client = commands.Bot(command_prefix=['!', '>'], case_sensitive=False, intents=discord.Intents.all())
+client = commands.Bot(command_prefix=['!', '>'], intents=discord.Intents.all())
 client.sniped = None
+client.roles_persistent_view = False
 client.remove_command('help')
 
 @client.event
@@ -38,6 +39,12 @@ async def snipe(ctx: commands.Context):
     em.timestamp = datetime.datetime.utcnow()
     await ctx.reply(embed=em)
 
+@client.command()
+async def rpgleaks(ctx):
+
+    await ctx.author.add_roles(discord.utils.get(ctx.guild.roles, name="RPG Leaks"))
+    await ctx.reply("Done")
+    
 ##
 @client.command()
 async def load(ctx, extension):

@@ -1,7 +1,0 @@
-nextcord
-asyncio
-aiohttp
-jishaku
-pymongo
-dnspython
-easy_pil

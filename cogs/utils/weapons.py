@@ -1,92 +1,108 @@
-boosts = {"💫": 5, "✨": 15, "⭐": 30, "🌟": 50}
-enhancement_symbols = ["💫", "✨", "⭐", "🌟"]
+import random
+import math
+
+new_boosts = {"<:uncommon:992507268715262002>": 5, "<:epic:992507250595877005>": 15, "<:legendary:992505206308884611>": 30}
+rarities = ["<:common:992507237413167145>", "<:uncommon:992507268715262002>", "<:epic:992507250595877005>", "<:legendary:992505206308884611>",  "<:mythic:992527133744304250>"]
 base_damage = {
-    "Fists": (40, 80, 5),
-    "Alpha Blade": (100, 160, 20),
-    "OP Weapon": (550, 800, 40),
-    "🔮 OP Weapon": (5500, 8000, 50),
+    "Fists": (50, 100, 5),
+    "<:mythic:992527133744304250> Fists": (999999*1.25, 999999*1.25, 100),
+    "<:uncommon:992507268715262002> Eclipse": (int(65*1.25), int(90*1.25), 10),
+    "<:uncommon:992507268715262002> Crescent Scythe": (int(75*1.25), int(110*1.25), 15),
+    "<:epic:992507250595877005> Terra Scepter": (int(90*1.25), int(125*1.25), 20),
+    "<:special:992527447327252532> Armageddon": (99999, 99999, 100),
 }
 
 class WeaponInstance:
 
-    def __init__(self, weapon_name: str):
-        self.name = weapon_name
-        self.enhancement = self.get_enhancement()
-        self.boost = self.get_boost()
-        self.clean_name = ""
+    def __init__(self, name: str):
+
+        self.name = name
+        self.rarity = self.name.split(" ")[0]
+        self.min_dmg = 0
         self.min_dmg = 0
         self.max_dmg = 0
         self.crit_chance = 0
+        self.base_min_dmg = 0
+        self.base_max_dmg = 0
+        self.base_crit_chance = 0
         self.get_stats()
 
-    # get enhancement
-    def get_enhancement(self) -> str:
+    def get_tier(self) -> int:
 
-        if self.name[0] in enhancement_symbols:
-            return self.name[0]
-        return None
-
-    # get boost
-    def get_boost(self) -> int:
-        if self.enhancement:
-            return boosts[self.enhancement]
-        return None
+        try:
+            return rarities.index(self.rarity) + 1
+        except ValueError:
+            return 10
 
     def get_stats(self) -> None:
 
-        if self.enhancement:
+        self.clean_name = self.name.replace(self.rarity, " ").replace("  ", "")  # strip rarity symbol
 
-            try:
-                self.clean_name = self.name.strip(self.name[0])[1:] # strip enhancement symbol
-                self.base_min_dmg = base_damage[self.clean_name][0]
-                self.base_max_dmg = base_damage[self.clean_name][1]
-                self.base_crit_chance = base_damage[self.clean_name][2]
-            except KeyError:
-                self.base_min_dmg = 40
-                self.base_max_dmg = 80
-                self.base_crit_chance = 5
+        # Cycle through keys and rarities, match rarity and clean name
+        for key in base_damage:
+            for rarity in rarities:
+                # if rarity + clean name match the key, take the base stats of that dict entry
+                if f"{rarity} {self.clean_name}" == key:
+                    self.base_name = f"{rarity} {self.clean_name}"
+                    self.base_rarity = rarity
+                    self.base_min_dmg = base_damage[key][0]
+                    self.base_max_dmg = base_damage[key][1]
+                    self.base_crit_chance = base_damage[key][2]
+                    self.base = True
+                    break
 
-            # if boost is there
-            # add boost to base damage
-            if self.boost:
-                self.min_dmg = int(self.base_min_dmg + (self.boost/100 * self.base_min_dmg))
-                self.max_dmg = int(self.base_max_dmg + (self.boost/100) * self.base_max_dmg)
-                self.crit_chance = int(self.base_crit_chance + (self.boost/100) * self.base_crit_chance)
+        try:              
+            
+            # Check to see if a boost should be given, if yes, it should be 1 or above (n > 0)
+            if rarities.index(self.rarity) - rarities.index(self.base_rarity) > 0:
+                self.boost = new_boosts[self.rarity]
+    
+                self.min_dmg = round(int(self.base_min_dmg + (self.boost / 100 * self.base_min_dmg)), 0)
+                self.max_dmg = round(int(self.base_max_dmg + (self.boost / 100) * self.base_max_dmg), -1)
+                self.crit_chance = round(int(self.base_crit_chance + (self.boost / 100) * self.base_crit_chance), 0)
+    
+            # else, no boost, base stats will be given
+            else:
+                self.min_dmg = self.base_min_dmg
+                self.max_dmg = self.base_max_dmg
+                self.crit_chance = self.base_crit_chance
+                self.boost = None
+        except:
+            # raise
+            self.min_dmg = 40
+            self.max_dmg = 80
+            self.crit_chance = 5
+            self.boost = None
 
+    # Get new stats, used for the upgrade function
+    def get_new_stats(self):
 
-        else:
-            self.min_dmg = base_damage[self.name][0]
-            self.max_dmg = base_damage[self.name][1]
-            self.crit_chance = base_damage[self.name][2]
+        self.min_dmg = round(int(self.base_min_dmg + (self.boost / 100 * self.base_min_dmg)), 0)
+        self.max_dmg = round(int(self.base_max_dmg + (self.boost / 100) * self.base_max_dmg), 0)
+        self.crit_chance = round(int(self.base_crit_chance + (self.boost / 100) * self.base_crit_chance), 0)
+        return
 
-    # upgrade weapon and get stats
     def upgrade(self):
 
-        # if weapon is already at max level
-        if self.enhancement == "🌟":
-            raise Exception("Weapon is already at max level.")
+        tier = self.get_tier()
 
-        if self.name[0] == "🔮":
-            raise Exception("Unusuals cannot be upgraded.")
-
-        # weapon does not have enhancement
-        if self.name[0] not in enhancement_symbols:
-            self.enhancement = "💫"
-            self.name = f"{self.enhancement} {self.name}"
-            self.boost = boosts[self.enhancement]
-            self.get_stats()
+        # Uncommon to Epic
+        if tier == 2:
+            self.boost = new_boosts["<:epic:992507250595877005>"]
+            self.name = self.name.replace(self.rarity, "<:epic:992507250595877005>")
+            self.get_new_stats()
             return self
 
-        # weapon has tiers 1-3
-        else:
-            self.new_enhancement = enhancement_symbols[enhancement_symbols.index(self.enhancement) + 1]
-            self.name = self.name.replace(self.enhancement, self.new_enhancement)
-            self.enhancement = self.new_enhancement
-            self.boost = boosts[self.enhancement]
-            self.get_stats()
+        # Epic to Legendary
+        if tier == 3:
+            self.boost = new_boosts["<:legendary:992505206308884611>"]
+            self.name = self.name.replace(self.rarity, "<:legendary:992505206308884611>")
+            self.get_new_stats()
             return self
 
-    def __str__(self) -> str:
-        if self.boost:
-            return f"Min: {self.min_dmg} (+{self.boost}%)\nMax: {self.max_dmg} (+{self.boost}%)\nCrit: {self.crit_chance}% (+{self.boost}%)"
+        if tier >= 4:
+            raise Exception("Could not upgrade. Weapon is at max level already!")
+
+
+    def __repr__(self) -> str:
         return f"Min: {self.min_dmg}\nMax: {self.max_dmg}\nCrit: {self.crit_chance}%"

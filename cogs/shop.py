@@ -6,6 +6,7 @@ import time
 
 # Other
 
+import math
 from nextcord.ext import commands
 from nextcord.ext.commands import BucketType
 from nextcord.utils import get
@@ -39,7 +40,7 @@ def numformat(number):
         s = s.replace(".00", "")
     return s
 
-class Shop(commands.Cog):
+class Shop(commands.Cog, description="a"):
 
     def __init__(self, client):
         self.client = client
@@ -116,91 +117,128 @@ class Shop(commands.Cog):
 
         check = lambda m: m.author == ctx.author and m.channel == ctx.channel
         try:
-            message = await self.client.wait_for('message', check=check, timeout=15.0)
+            message = await self.client.wait_for('message', check=check, timeout=60.0)
             if "<@&" in message.content:
                 return int(message.content[3:-1])
         except asyncio.TimeoutError:
             return None
 
         return message
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def shopinit(self, ctx):
-
-        self.shop.insert_one({
-            "_id": 1,
-            "item_name": "Second Item",
-            "item_price": 200,
-            "item_desc": "This is the second item in the shop",
-            "item_role": "Test Role2",
-        })
-
+        
     @commands.command(name="shop")
     async def shop(self, ctx, page: int = 1):
 
         settings_ = await self.get_settings()
         currency = settings_["currency"]
-        embed = discord.Embed(title="Shop", description=f"You can buy different ranks and other items with {currency}", colour=discord.Colour.from_rgb(0, 208, 255))
+        embed = discord.Embed(title=f"{ctx.guild.name} Shop", description=f"You can buy different ranks and other items with {currency}",colour=discord.Colour.from_rgb(0, 208, 255))
         for data in self.shop.find().sort("_id", 1):
 
             item = await self.get_item(data["item_name"])
             if page == 1:
-                # Only display first 10 items (id 1-10)
-                if item["_id"] <= 9:
+                # Only display first 5 items (id 0-4)
+                if item["_id"] <= 4:
 
                     item_name = item["item_name"]
                     item_price = item["item_price"]
                     item_desc = item["item_desc"]
-                    embed.add_field(name=f"<:transparent:911319446918955089>\n{item_name} - {currency} {numformat(item_price)}", value=f"{item_desc}", inline=False)
+                    embed.add_field(
+                        name=f"<:transparent:911319446918955089>\n{item_name} - {currency} {numformat(item_price)}",
+                        value=f"{item_desc}", inline=False)
                 elif item["_id"] >= 9:
                     pass
             elif page == 2:
-                # Only display first 10 items (id 1-10)
-                if item["_id"] <= 19:
+                # Only display first 10 items (id 5-9)
+                if 9 >= item["_id"] > 4:
 
                     item_name = item["item_name"]
                     item_price = item["item_price"]
                     item_desc = item["item_desc"]
-                    embed.add_field(name=f"<:transparent:911319446918955089>\n{item_name} - {currency} {numformat(item_price)}", value=f"{item_desc}", inline=False)
-                elif item["_id"] >= 19:
+                    embed.add_field(
+                        name=f"<:transparent:911319446918955089>\n{item_name} - {currency} {numformat(item_price)}",
+                        value=f"{item_desc}", inline=False)
+                elif item["_id"] >= 9:
+                    pass
+            elif page == 3:
+                # Only display first 10 items (id 9-13)
+                if 13 >= item["_id"] > 9:
+
+                    item_name = item["item_name"]
+                    item_price = item["item_price"]
+                    item_desc = item["item_desc"]
+                    embed.add_field(
+                        name=f"<:transparent:911319446918955089>\n{item_name} - {currency} {numformat(item_price)}",
+                        value=f"{item_desc}", inline=False)
+                elif item["_id"] >= 13:
                     pass
 
+        # PAGES: round up (total_items / 5)
+        # /5 because 5 items per page
+        embed.set_footer(text=f"Page {page}/{math.ceil(self.shop.count_documents({})/5)}")
+        embed.set_thumbnail(url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
 
     @commands.command(name="buyitem", aliases=["buy"])
     async def buyitem(self, ctx, item_name: str):
 
-        item_not_found = discord.Embed(description=f"Could not find that item in the shop, please try again.", colour=discord.Colour.from_rgb(255, 75, 75))
+        item_not_found = discord.Embed(title="Search Error", description=f"Could not find that item in the shop, please try again.",colour=discord.Colour.from_rgb(255, 75, 75))
         item_not_found.set_footer(text="You can also use the shop command to see all items")
+        item_not_found.timestamp = datetime.utcnow()
+
         user_not_found = discord.Embed(description=":exclamation: You need an account to play eco. Type `!start` to create one.",colour=discord.Colour.from_rgb(0, 208, 255))
         user_not_found.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar)
         user_not_found.timestamp = datetime.utcnow()
-        
+
         settings_ = await self.get_settings()
         currency = settings_["currency"]
         user = await self.get_user(ctx.author)
 
         item = await self.get_item(item_name)
+        item_id = item["_id"]
+        if item_id != 0:
+            item_required = self.shop.find_one({"_id":item_id-1})["item_role"]
+        else:
+            item_required = None
+
         if item is None: return await ctx.send(f"{ctx.author.mention} Item not found.")
         if user is None: return await ctx.send(f"{ctx.author.mention} You are not registered.")
 
         if item["item_price"] > user["balance"]:
-            embed = discord.Embed(description=f"You need {currency} {numformat(item['item_price'] - user['balance'])} more to buy this item.", colour=discord.Colour.from_rgb(255, 75, 75))
+            embed = discord.Embed(title="Missing Funds", description=f"You need {currency} {numformat(item['item_price'] - user['balance'])} more to buy this item.",colour=discord.Colour.from_rgb(255, 75, 75))
+            embed.timestamp = datetime.utcnow()
             return await ctx.reply(embed=embed, mention_author=False)
 
-        if item["item_role"]:
-            role = await self.get_role_name(ctx, item["item_role"])
-            if role in ctx.author.roles:
-                embed = discord.Embed(description=f"You already have this role.", colour=discord.Colour.from_rgb(255, 75, 75))
-                return await ctx.reply(embed=embed, mention_author=False)
-            await ctx.author.add_roles(role)
+        if item_required is not None:
+            if await self.get_role_name(ctx, item_required) not in ctx.author.roles:
+                role_req_embed = discord.Embed(title="Missing Role", description=f"You need the {item_required} role to buy this item.",colour=discord.Colour.from_rgb(255, 75, 75))
+                role_req_embed.timestamp = datetime.utcnow()
+                return await ctx.reply(embed=role_req_embed, mention_author=False)
+            else:
+                if item["item_role"]:
+                    role = await self.get_role_name(ctx, item["item_role"])
+                    if role in ctx.author.roles:
+                        embed = discord.Embed(title="Duplicate Role", description=f"You already have this role.", colour=discord.Colour.from_rgb(255, 75, 75))
+                        return await ctx.reply(embed=embed, mention_author=False)
+                    await ctx.author.add_roles(role)
 
-        await self.update_bal(ctx.author, -item["item_price"])
-        embed = discord.Embed(description=f"You have bought {item['item_name']} for {currency} {numformat(item['item_price'])}", colour=discord.Colour.from_rgb(75, 255, 75))
-        embed.set_author(name="Item Bought", icon_url=ctx.author.display_avatar)
-        embed.timestamp = datetime.utcnow()
-        return await ctx.reply(embed=embed, mention_author=False)
+                await self.update_bal(ctx.author, -item["item_price"])
+                embed = discord.Embed(description=f"You have bought {item['item_name']} for {currency} {numformat(item['item_price'])}", colour=discord.Colour.from_rgb(75, 255, 75))
+                embed.set_author(name="Item Bought", icon_url=ctx.author.display_avatar)
+                embed.timestamp = datetime.utcnow()
+                return await ctx.reply(embed=embed, mention_author=False)
+        else:
+            if item["item_role"]:
+                role = await self.get_role_name(ctx, item["item_role"])
+                if role in ctx.author.roles:
+                    embed = discord.Embed(title="Duplicate Role", description=f"You already have this role.",colour=discord.Colour.from_rgb(255, 75, 75))
+                    embed.timestamp = datetime.utcnow()
+                    return await ctx.reply(embed=embed, mention_author=False)
+                await ctx.author.add_roles(role)
+
+            await self.update_bal(ctx.author, -item["item_price"])
+            embed = discord.Embed(description=f"You have bought {item['item_name']} for {currency} {numformat(item['item_price'])}",colour=discord.Colour.from_rgb(75, 255, 75))
+            embed.set_author(name="Item Bought", icon_url=ctx.author.display_avatar)
+            embed.timestamp = datetime.utcnow()
+            return await ctx.reply(embed=embed, mention_author=False)
 
     @commands.command(name="createitem", aliases=["ci", "create"])
     @commands.has_permissions(administrator=True)
@@ -244,8 +282,9 @@ class Shop(commands.Cog):
         embed.add_field(name="Role Assigned", value="?", inline=True)
         await original.edit(embed=embed)
         _role = await self.check_message(ctx)
-        if _role is None: return await ctx.send(embed=timeout_embed)
-        item_role = await self.get_role_name(ctx, _role.content) # Get role object
+        if _role is None:
+            return await ctx.send(embed=timeout_embed)
+        item_role = await self.get_role_name(ctx, _role.content)
         embed.remove_field(3)
         embed.add_field(name="Role Assigned", value=item_role.mention, inline=True)
         await original.edit(embed=embed)

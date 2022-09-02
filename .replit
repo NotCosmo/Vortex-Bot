@@ -1,0 +1,5 @@
+run = """
+pip3 install nextcord
+pip3 install easy-pil
+python main.py
+"""
